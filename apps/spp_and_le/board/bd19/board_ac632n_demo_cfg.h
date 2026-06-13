@@ -72,7 +72,7 @@
 //*********************************************************************************//
 //                                 硬件SPI 配置                                        //
 //*********************************************************************************//
-#define	TCFG_HW_SPI1_ENABLE		DISABLE_THIS_MOUDLE
+#define	TCFG_HW_SPI1_ENABLE		ENABLE_THIS_MOUDLE
 //A组IO:    DI: PB2     DO: PB1     CLK: PB0
 //B组IO:    DI: PC3     DO: PC5     CLK: PC4
 #define TCFG_HW_SPI1_PORT		'A'
@@ -80,7 +80,7 @@
 #define TCFG_HW_SPI1_MODE		SPI_MODE_BIDIR_1BIT
 #define TCFG_HW_SPI1_ROLE		SPI_ROLE_MASTER
 
-#define	TCFG_HW_SPI2_ENABLE		DISABLE_THIS_MOUDLE
+#define	TCFG_HW_SPI2_ENABLE		ENABLE_THIS_MOUDLE
 //A组IO:    DI: PB8     DO: PB10    CLK: PB9
 //B组IO:    DI: PA13    DO: DM      CLK: DP
 #define TCFG_HW_SPI2_PORT		'A'
@@ -136,10 +136,17 @@
 #define TCFG_IOKEY_NEXT_ONE_PORT_VALUE		0x3              //next port键值
 
 //*********************************************************************************//
+//                                 2.4Gkey 配置                                      //
+//*********************************************************************************//
+
+#define TCFG_RF24GKEY_ENABLE			    DISABLE_THIS_MOUDLE // 是否使能2.4G遥控（改成使用自定义的配置，需要到对应的头文件查看）
+
+
+//*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
-#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE //是否使能AD按键
-#define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
+#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE // 是否使能AD按键
+#define TCFG_ADKEY_PORT                     IO_PORTB_01         // AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
     AD_CH_PA9    AD_CH_PA1    AD_CH_PB1    AD_CH_PB4
@@ -317,12 +324,11 @@
 //#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15
 #define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                    //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
-// #define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
-#define TCFG_LOWPOWER_LOWPOWER_SEL			0                     // SNIFF状态下芯片是否进入powerdown
+#define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
 /*强VDDIO等级配置,可选：
     VDDIOM_VOL_20V    VDDIOM_VOL_22V    VDDIOM_VOL_24V    VDDIOM_VOL_26V
-    VDDIOM_VOL_30V    VDDIOM_VOL_30V    VDDIOM_VOL_32V    VDDIOM_VOL_36V*/
-#define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_30V
+    VDDIOM_VOL_30V    VDDIOM_VOL_30V    VDDIOM_VOL_32V    VDDIOM_VOL_34V*/
+#define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_34V
 /*弱VDDIO等级配置，可选：
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
@@ -346,7 +352,7 @@
 #if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
 #define TCFG_SYS_LVD_EN						      1   //dcdc模式电压低于2.4v的时候切为LDO模式，需要开启电量检测
 #else
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #endif
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (0 * 60)      //HID无操作自动关机(单位：秒)
@@ -354,9 +360,9 @@
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
-#define TCFG_USER_TWS_ENABLE                      0   // tws功能使能
-#define TCFG_USER_BLE_ENABLE                      1   // BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      0   // EDR功能使能
+#define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
+#define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
+#define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
 #if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    1

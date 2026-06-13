@@ -513,7 +513,7 @@ static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data, s8 rss
         case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
             tmp32 = adv_data_pt[lenght - 1];
             adv_data_pt[lenght - 1] = 0;;
-            log_info("remoter_name: %s\n", adv_data_pt);
+            // log_info("remoter_name: %s\n", adv_data_pt);
             //---------------------new
             sprintf(at_send_adv_buf, "NAME:%s", adv_data_pt);  //rssi
             at_cmd_send_no_end(at_send_adv_buf, strlen(at_send_adv_buf));

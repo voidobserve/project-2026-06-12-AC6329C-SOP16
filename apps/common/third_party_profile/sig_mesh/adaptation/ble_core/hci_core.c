@@ -12,9 +12,6 @@
 #include "app_config.h"
 #include "rcsp_bluetooth.h"
 #include "custom_cfg.h"
-#if CONFIG_BT_MESH_DFU_DIST
-#include "mesh_dfu_app_cmd_protocol.h"
-#endif
 
 #define LOG_TAG             "[MESH-hci_core]"
 #define LOG_INFO_ENABLE
@@ -33,7 +30,7 @@ static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 
 #if ADAPTATION_COMPILE_DEBUG
 
-int bt_pub_key_gen(void)
+int bt_pub_key_gen(struct bt_pub_key_cb *new_cb)
 {
     return 0;
 }
@@ -73,7 +70,7 @@ struct bt_hci_evt_le_generate_dhkey_complete {
 
 struct bt_conn conn;
 static bool is_connect;
-static u8_t pub_key[64] = {0};
+static u8_t pub_key[64];
 static struct bt_pub_key_cb *pub_key_cb;
 static bt_dh_key_cb_t dh_key_cb;
 static struct bt_conn_cb *callback_list;
@@ -116,27 +113,27 @@ void ble_generate_dh_key(const u8 *remote_pk)
 #endif /* CMD_DIRECT_TO_BTCTRLER_TASK_EN */
 }
 
-int bt_pub_key_gen(void)
+int bt_pub_key_gen(struct bt_pub_key_cb *new_cb)
 
 {
-    // struct bt_pub_key_cb *cb;
+    struct bt_pub_key_cb *cb;
 
-    // if (pub_key_cb) {
-    //     return 0;
-    // }
+    if (pub_key_cb) {
+        return 0;
+    }
 
-    // new_cb->_next = pub_key_cb;
-    // pub_key_cb = new_cb;
+    new_cb->_next = pub_key_cb;
+    pub_key_cb = new_cb;
 
-    LOG_INF("BT_HCI_OP_LE_P256_PUBLIC_KEY");
+    BT_INFO("BT_HCI_OP_LE_P256_PUBLIC_KEY");
 
     ble_read_local_p256_public_key();
 
-    // for (cb = pub_key_cb; cb; cb = cb->_next) {
-    //     if (cb != new_cb) {
-    //         cb->func(NULL);
-    //     }
-    // }
+    for (cb = pub_key_cb; cb; cb = cb->_next) {
+        if (cb != new_cb) {
+            cb->func(NULL);
+        }
+    }
 
     return 0;
 }
@@ -152,8 +149,8 @@ int bt_dh_key_gen(const u8_t remote_pk[64], bt_dh_key_cb_t cb)
 
     dh_key_cb = cb;
 
-    /* LOG_INF("--func=%s", __FUNCTION__); */
-    /* LOG_HEXDUMP_INF(remote_pk, 64); */
+    /* BT_INFO("--func=%s", __FUNCTION__); */
+    /* BT_INFO_HEXDUMP(remote_pk, 64); */
 
     ble_generate_dh_key(remote_pk);
     if (err) {
@@ -168,7 +165,7 @@ struct bt_conn *bt_conn_ref(struct bt_conn *conn)
 {
     atomic_inc(&conn->ref);
 
-    LOG_DBG("handle %u ref %u", conn->handle, atomic_get(&conn->ref));
+    BT_DBG("handle %u ref %u", conn->handle, atomic_get(&conn->ref));
 
     return conn;
 }
@@ -177,7 +174,7 @@ void bt_conn_unref(struct bt_conn *conn)
 {
     atomic_dec(&conn->ref);
 
-    LOG_DBG("handle %u ref %u", conn->handle, atomic_get(&conn->ref));
+    BT_DBG("handle %u ref %u", conn->handle, atomic_get(&conn->ref));
 }
 
 void bt_conn_cb_register(struct bt_conn_cb *cb)
@@ -204,21 +201,15 @@ static inline void hci_set_conn_run(u16 conn_handle)
 {
     conn.handle = conn_handle;
 
-    if (callback_list && callback_list->connected) {
-        callback_list->connected(&conn, 0);
-    }
+    callback_list->connected(&conn, 0);
 
     is_connect = TRUE;
 }
 
 static inline void hci_set_disconn_run(void)
 {
-    if (callback_list && callback_list->disconnected) {
-        callback_list->disconnected(&conn, 0);
-    }
+    callback_list->disconnected(&conn, 0);
 
-    // clear  all conn info
-    memset(&conn, 0, sizeof(struct bt_conn));
     is_connect = FALSE;
 }
 
@@ -226,8 +217,8 @@ static inline void le_pkey_complete(u8 *buf, u16 size)
 {
     struct bt_hci_evt_le_p256_public_key_complete *evt = (void *)buf;
 
-    LOG_INF("status: 0x%x", evt->status);
-    LOG_HEXDUMP_INF(evt->key, 64);
+    BT_INFO("status: 0x%x", evt->status);
+    BT_INFO_HEXDUMP(evt->key, 64);
 
     u8 key[64];
     sys_memcpy_swap(key, evt->key, 32);
@@ -248,8 +239,8 @@ static inline void le_dhkey_complete(u8 *buf, u16 size)
 {
     struct bt_hci_evt_le_generate_dhkey_complete *evt = (void *)buf;
 
-    LOG_INF("status: 0x%x", evt->status);
-    LOG_HEXDUMP_INF(buf, size);
+    BT_INFO("status: 0x%x", evt->status);
+    BT_INFO_HEXDUMP(buf, size);
 
     if (dh_key_cb) {
         dh_key_cb(evt->status ? NULL : evt->dhkey);
@@ -279,7 +270,7 @@ void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
             mesh_can_send_now_wakeup();
             break;
         case HCI_DISCONNECTION_COMPLETE_EVENT:
-            LOG_INF("HCI_DISCONNECTION_COMPLETE_EVENT");
+            BT_INFO("HCI_DISCONNECTION_COMPLETE_EVENT");
             mesh_set_ble_work_state(BLE_ST_DISCONN);
 #if RCSP_BTMATE_EN
             rcsp_exit();
@@ -293,10 +284,10 @@ void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
         case HCI_LE_META_EVENT:
             switch (packet[2]) {
             case HCI_LE_CONNECTION_COMPLETE_EVENT:
-                LOG_INF("HCI_LE_CONNECTION_COMPLETE_EVENT");
+                BT_INFO("HCI_LE_CONNECTION_COMPLETE_EVENT");
                 u16 connection_handle = sys_get_le16(&packet[4]);
                 hci_set_conn_run(connection_handle);
-                LOG_INF("connection handle =0x%x", connection_handle);
+                BT_INFO("connection handle =0x%x", connection_handle);
                 resume_mesh_gatt_proxy_adv_thread();
                 ble_user_cmd_prepare(BLE_CMD_ATT_SEND_INIT, 4, connection_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
 #if RCSP_BTMATE_EN
@@ -305,14 +296,16 @@ void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
                 void JL_rcsp_auth_reset(void);
                 JL_rcsp_auth_reset();
 #endif
-#endif /*RCSP_BTMATE_EN*/
+                //rcsp_dev_select(RCSP_BLE);
+                rcsp_init();
+#endif
                 break;
             case HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT:
-                LOG_INF("HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT");
+                BT_INFO("HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT");
                 le_pkey_complete(packet + 3, size - 3);
                 break;
             case HCI_LE_GENERATE_DHKEY_COMPLETE_EVENT:
-                LOG_INF("HCI_LE_GENERATE_DHKEY_COMPLETE_EVENT");
+                BT_INFO("HCI_LE_GENERATE_DHKEY_COMPLETE_EVENT");
                 le_dhkey_complete(packet + 3, size - 3);
                 break;
             }
@@ -324,33 +317,6 @@ void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
 void hci_core_init(void)
 {
     mesh_hci_init();
-}
-
-/* Fix: merger conn & disconn cb processing of the pb_gatt and proxy_srv. */
-void gatt_connected(struct bt_conn *conn, u8_t conn_err)
-{
-    pb_gatt_connected(conn, conn_err);
-    proxy_srv_connected(conn, conn_err);
-}
-
-void gatt_disconnected(struct bt_conn *conn, u8_t reason)
-{
-    pb_gatt_disconnected(conn, reason);
-    proxy_srv_disconnected(conn, reason);
-
-#if CONFIG_BT_MESH_DFU_DIST
-    clear_sn();
-#endif
-}
-
-static const struct bt_conn_cb conn_callbacks = {
-    .connected = gatt_connected,
-    .disconnected = gatt_disconnected,
-};
-
-const struct bt_conn_cb *bt_conn_get_callbacks(void)
-{
-    return &conn_callbacks;
 }
 
 #endif /* ADAPTATION_COMPILE_DEBUG */

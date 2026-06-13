@@ -16,7 +16,6 @@
 #define ACTION_HILINK_MAIN      0x000d
 #define ACTION_ELECTROCAR       0x000e
 #define ACTION_FINDMY           0x000F
-#define ACTION_FTMS             0x0010
 
 
 #endif

@@ -300,19 +300,18 @@ typedef enum {
     USER_CTRL_MAP_CMD_BEGIN,
     //MAP读取时间
     USER_CTRL_MAP_READ_TIME,
-    //MAP读取收件箱短信
+    //MAP读取未读短信
     USER_CTRL_MAP_READ_INBOX,
-    //MAP读取发件箱短信
+    //MAP读取已读短信
     USER_CTRL_MAP_READ_OUTBOX,
-    //MAP读取发送中读短信
+    //MAP读取已发读短信
     USER_CTRL_MAP_READ_SENT,
-    //MAP读取垃圾箱短信
+    //MAP读取删除短信
     USER_CTRL_MAP_READ_DELETED,
     //MAP读取草稿箱短信
     USER_CTRL_MAP_READ_DRAFT,
     //MAP停止读取
     USER_CTRL_MAP_STOP_READING,
-    USER_CTRL_MAP_SET_NOTIFICATION,
     USER_CTRL_MAP_CMD_END,
 
     USER_CTRL_LAST

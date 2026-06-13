@@ -102,8 +102,8 @@ void handle_scan_callback(uint8_t *packet, uint16_t size)
         .__buf = buf.data,
     };
 
-    /* LOG_INF("--func=%s", __FUNCTION__); */
-    /* LOG_HEXDUMP_INF(packet, size); */
+    /* BT_INFO("--func=%s", __FUNCTION__); */
+    /* BT_INFO_HEXDUMP(packet, size); */
 
     reverse_bytes(&packet[4], addr.a.val, 6);
 
@@ -127,7 +127,7 @@ int bt_le_scan_start(bt_le_scan_cb_t cb)
 
     scan_dev_found_cb = cb;
 
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     ble_set_scan_param(scan_param.type, scan_param.interval, scan_param.window);
 
@@ -138,7 +138,7 @@ int bt_le_scan_start(bt_le_scan_cb_t cb)
 
 int bt_le_scan_stop(void)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     ble_set_scan_enable(0);
 

@@ -56,7 +56,7 @@ void uart_set_dir(u8 mode);
 void uart_update_write(u8 *data, u32 len);
 void uart_update_set_baud(u32 baudrate);
 void uart_close_deal(void);
-void uart_hw_init(uart_update_cfg *update_cfg, void (*cb)(void *, u32));
+void uart_hw_init(uart_update_cfg update_cfg, void (*cb)(void *, u32));
 void uart_data_decode(u8 *buf, u16 len);
 
 enum {
@@ -144,7 +144,7 @@ static void uart_update_callback(void *priv, u8 type, u8 cmd)
     /*     update_baudrate = 9600; */
     /*     uart_file_offset = 0; */
     /*     uart_update_set_baud(update_baudrate); */
-    /*     //uart_hw_init(&update_cfg, uart_data_decode); */
+    /*     //uart_hw_init(update_cfg, uart_data_decode); */
     /* } */
 }
 
@@ -448,7 +448,7 @@ void uart_update_init(uart_update_cfg *cfg)
 {
     memcpy(&update_cfg, cfg, sizeof(uart_update_cfg));
     task_create(update_loader_download_task, NULL, THIS_TASK_NAME);
-    uart_hw_init(&update_cfg, uart_data_decode);
+    uart_hw_init(update_cfg, uart_data_decode);
     printf(">>>%s\n", __func__);
 }
 

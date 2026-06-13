@@ -220,14 +220,14 @@ uint8_t tuya_ble_event_send(tuya_ble_evt_param_t *evt)
 }
 
 
-uint8_t tuya_ble_custom_event_send(tuya_ble_custom_evt_t *evt)
+uint8_t tuya_ble_custom_event_send(tuya_ble_custom_evt_t evt)
 {
     static tuya_ble_evt_param_t event;
     uint8_t ret = 0;
 
 #if TUYA_BLE_USE_OS
     event.hdr.event = TUYA_BLE_EVT_CUSTOM;
-    memcpy(&event.custom_evt, evt, sizeof(tuya_ble_custom_evt_t));
+    event.custom_evt = evt;
 
 #if TUYA_BLE_SELT_BUILT_TASK
     if (tuya_ble_os_msg_queue_send(tuya_ble_queue_handle, &event, 0)) {
@@ -246,7 +246,7 @@ uint8_t tuya_ble_custom_event_send(tuya_ble_custom_evt_t *evt)
 #else
 
     event.hdr.event = TUYA_BLE_EVT_CUSTOM;
-    memcpy(&event.custom_evt, evt, sizeof(tuya_ble_custom_evt_t));
+    event.custom_evt = evt;
 
     if (tuya_ble_message_send(&event) == TUYA_BLE_SUCCESS) {
         ret = 0;

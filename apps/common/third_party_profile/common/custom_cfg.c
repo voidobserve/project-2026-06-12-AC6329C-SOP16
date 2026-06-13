@@ -201,7 +201,7 @@ typedef struct _sdk_type_cfg_t {
 typedef struct _hid_param_cfg_t {
     u16 crc;
     u16 len;
-    u8 data[64];
+    u8 data[32];
 } hid_param_cfg_t;
 
 typedef struct _ex_cfg_t {
@@ -1274,18 +1274,8 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
 #endif
     custom_cfg_item_write(CFG_ITEM_SDK_TYPE, &sdk_type, sizeof(sdk_type));
 
-    struct usb_desc_t {
-        u16 vid;
-        u16 pid;
-        u16 verison_bcd;
-        u8 Manufacturer_str[18]; //带结束符
-        u8 Product_str[18];//带结束符
-        u8 SerialNumber_str[18];//带结束符
-        u8 resv[4]; //预留
-    };
-    struct usb_desc_t hid_param = {0};
     // 可填充hid信息
-    custom_cfg_item_write(CFG_ITEM_HID_PARAM, &hid_param, sizeof(hid_param));
+    // custom_cfg_item_write(CFG_ITEM_HID_PARAM, &hid_param, sizeof(hid_param));
     return 0;
 }
 

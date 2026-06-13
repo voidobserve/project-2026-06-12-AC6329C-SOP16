@@ -547,17 +547,6 @@ SECTIONS
         KEEP(*(.omsensor_dev))
         OMSensor_dev_end = .;
 
-        . = ALIGN(4);
-
-        _bt_mesh_scene_entry_sig_list_start = .;
-        KEEP(*(.bt_mesh_scene_entry_sig))
-        _bt_mesh_scene_entry_sig_list_end = .;
-
-        . = ALIGN(4);
-        _bt_mesh_scene_entry_vnd_list_start = .;
-        KEEP(*(.bt_mesh_scene_entry_vnd))
-        _bt_mesh_scene_entry_vnd_list_end = .;
-
         storage_device_begin = .;
         KEEP(*(.storage_device))
         storage_device_end = .;

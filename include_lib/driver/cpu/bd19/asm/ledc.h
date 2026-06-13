@@ -15,7 +15,7 @@ typedef enum {
     t_4us,
 } t_unit_enum;
 
-typedef struct ledc_platform_data {
+struct ledc_platform_data {
     u8 index;           //控制器号
     u8 port;            //输出引脚
     u8 idle_level;      //当前帧的空闲电平，0：低电平， 1：高电平
@@ -28,7 +28,7 @@ typedef struct ledc_platform_data {
     u8 t0l_cnt;         //0码的低电平时间 = t0l_cnt * t_unit;
     u32 t_rest_cnt;     //复位信号时间 = t_rest_cnt * t_unit;
     void (*cbfun)(void);//中断回调函数
-} ledc_platform_data_t;
+};
 
 
 #define LEDC_PLATFORM_DATA_BEGIN(data) \
@@ -36,6 +36,11 @@ typedef struct ledc_platform_data {
 
 #define LEDC_PLATFORM_DATA_END()  \
 };
+
+void ledc_init(const struct ledc_platform_data *arg);
+
+void ledc_send_rgbbuf(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt);
+void ledc_send_white_light_buf(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt);
 
 #endif
 

@@ -89,7 +89,6 @@ CFLAGS := \
 	-Wframe-larger-than=256 \
 	-Wreturn-type \
 	-Wimplicit-function-declaration \
-	-Werror=jl-arg-struct-check \
 	-fms-extensions \
 
 
@@ -120,8 +119,8 @@ DEFINES := \
 	-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
 	-DTIMER_POOL_NUM_CONFIG=10 \
 	-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
-	-DSDK_VERSION_CFG_DEFINE=0x240001 \
-	-DSDK_VERSION_DATE_DEFINE=20241231 \
+	-DSDK_VERSION_CFG_DEFINE=0x230003 \
+	-DSDK_VERSION_DATE_DEFINE=20240331 \
 	-DVFS_ENABLE=1 \
 	-DUSE_SDFILE_NEW=1 \
 	-DVFS_FILE_POOL_NUM_CONFIG=0 \
@@ -209,7 +208,6 @@ INCLUDES := \
 	-I../../../../apps/common/device/usb \
 	-I../../../../apps/common/device/usb/device \
 	-I../../../../apps/common/device/usb/host \
-	-I../../../../apps/spp_and_le/user_app \
 	-I$(SYS_INC_DIR) \
 
 
@@ -383,8 +381,6 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/findmy/ble_fmy_fmna.c \
 	../../../../apps/spp_and_le/examples/findmy/ble_fmy_ota.c \
 	../../../../apps/spp_and_le/examples/findmy/ble_fmy_sensor_uart.c \
-	../../../../apps/spp_and_le/examples/ftms/app_ftms.c \
-	../../../../apps/spp_and_le/examples/ftms/ble_ftms.c \
 	../../../../apps/spp_and_le/examples/hilink/app_hilink.c \
 	../../../../apps/spp_and_le/examples/hilink/hilink_demo.c \
 	../../../../apps/spp_and_le/examples/idle/app_idle.c \
@@ -436,7 +432,6 @@ c_SRC_FILES := \
 	../../../../cpu/bd19/spi_test.c \
 	../../../../cpu/bd19/tone_player.c \
 	../../../../cpu/bd19/uart_dev.c \
-	../../../../apps/spp_and_le/user_app/user_main.c
 
 
 # 需要编译的 .S 文件

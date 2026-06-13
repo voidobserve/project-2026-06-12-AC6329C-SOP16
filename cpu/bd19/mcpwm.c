@@ -139,7 +139,7 @@ CLOCK_CRITICAL_HANDLE_REG(mcpwm, clock_critical_enter, clock_critical_exit)
  */
 void mcpwm_set_duty(pwm_ch_num_type pwm_ch, u16 duty)
 {
-    PWM_TIMER_REG *timer_reg = get_pwm_timer_reg(pwm_ch);
+PWM_TIMER_REG *timer_reg = get_pwm_timer_reg(pwm_ch);
     PWM_CH_REG *pwm_reg = get_pwm_ch_reg(pwm_ch);
 
     if (pwm_reg && timer_reg) {
@@ -193,38 +193,9 @@ void mctimer_ch_open_or_close(pwm_ch_num_type pwm_ch, u8 enable)
         return;
     }
     if (enable) {
-        // JL_MCPWM->MCPWM_CON0 |= BIT(pwm_ch + 8); //TnEN
-        
+        JL_MCPWM->MCPWM_CON0 |= BIT(pwm_ch + 8); //TnEN
     } else {
-        // JL_MCPWM->MCPWM_CON0 &= (~BIT(pwm_ch + 8)); //TnDIS
-    }
-}
-
-/**
- * @brief 同时打开或者同时关闭一个/多个时基
- *      
- * @param muilty_pwm_chx 0b_0001 -- pwm_ch0，0b_0011 -- pwm_ch0和pwm_ch1
- * @param enable 1：打开  0：关闭
- */
-void mctimer_muilty_chx_open_or_close(u8 muilty_pwm_chx, u8 enable)
-{  
-    u32 tmp = 0;
-
-    if (muilty_pwm_chx > 0x0F) {
-        return; // 参数无效，退出
-    }
-
-    for (u8 i = 0; i < 4 ; i++) {
-        if (((muilty_pwm_chx >> i) & 0x01) == 0x01) {
-            tmp |= BIT(i + 8);
-        }
-    }
-
-    if (enable) {
-        JL_MCPWM->MCPWM_CON0 |= tmp; //TnEN
-    } else {
-        // JL_MCPWM->MCPWM_CON0 &= (~BIT(muilty_pwm_chx + 8)); //TnDIS
-        JL_MCPWM->MCPWM_CON0 &= (~tmp); //TnDIS
+        JL_MCPWM->MCPWM_CON0 &= (~BIT(pwm_ch + 8)); //TnDIS
     }
 }
 
@@ -305,9 +276,9 @@ void mcpwm_init(struct pwm_platform_data *arg)
     } else {
         pwm_reg->ch_con0 &= ~(BIT(5) | BIT(4));
     }
+
     //set duty
     mcpwm_set_duty(arg->pwm_ch_num, arg->duty);
-
     mcpwm_open(arg->pwm_ch_num); 	 //mcpwm enable
 
     //H:
@@ -316,6 +287,7 @@ void mcpwm_init(struct pwm_platform_data *arg)
         gpio_set_fun_output_port(arg->h_pin, FO_MCPWM_CH0H + 2 * arg->pwm_ch_num, 0, 1);
         gpio_set_direction(arg->h_pin, 0); //DIR output
     }
+
     //L:
     if (arg->l_pin < IO_MAX_NUM) {      //任意引脚
         pwm_reg->ch_con0 |= BIT(3);     //L_EN
@@ -323,7 +295,7 @@ void mcpwm_init(struct pwm_platform_data *arg)
         gpio_set_direction(arg->l_pin, 0); //DIR output
     }
 
-    log_pwm_info(arg->pwm_ch_num);
+    // log_pwm_info(arg->pwm_ch_num);
 }
 
 
@@ -485,7 +457,7 @@ void io_ext_interrupt_test(void)
  * @param JL_TIMERx : JL_TIMER0/1/2/3
  * @param pwm_io : JL_PORTA_01, JL_PORTB_02,,,等等，支持任意普通IO
  * @param fre : 频率，单位Hz
- * @param duty : 初始占空比，0~10000 对应0~100%
+ * @param duty : 初始占空比，0~10000对应0~100%
  */
 void timer_pwm_init(JL_TIMER_TypeDef *JL_TIMERx, u32 pwm_io, u32 fre, u32 duty)
 {

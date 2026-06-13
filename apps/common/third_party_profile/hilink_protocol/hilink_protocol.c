@@ -97,7 +97,7 @@ void hilink_set_attr_info_store_vm_id(uint16_t value)
 static void hilink_auth_info_store()
 {
     int ret;
-    ret = syscfg_write(auth_info_vm_id, &hilink_auth, sizeof(hilink_auth));
+    ret = syscfg_write(auth_info_vm_id, hilink_auth, sizeof(hilink_auth));
     if (ret != sizeof(hilink_auth)) {
         printf("hilink_auth_info_store err:%d", ret);
     }
@@ -106,7 +106,7 @@ static void hilink_auth_info_store()
 static void hilink_attr_info_store()
 {
     int ret;
-    ret = syscfg_write(attr_info_vm_id, &hilink_attr, sizeof(hilink_attr));
+    ret = syscfg_write(attr_info_vm_id, hilink_attr, sizeof(hilink_attr));
     if (ret != sizeof(hilink_attr)) {
         printf("hilink_attr_info_store err:%d", ret);
     }
@@ -118,7 +118,7 @@ static void hilink_attr_info_store()
 void hilink_auth_info_read()
 {
     int ret;
-    ret = syscfg_read(auth_info_vm_id, &hilink_auth, sizeof(hilink_auth));
+    ret = syscfg_read(auth_info_vm_id, hilink_auth, sizeof(hilink_auth));
     if (ret != sizeof(hilink_auth)) {
         printf("hilink_auth_info_read err:%d", ret);
         return;
@@ -147,7 +147,7 @@ void hilink_auth_info_read()
 void hilink_attr_info_read()
 {
     int ret;
-    ret = syscfg_read(attr_info_vm_id, &hilink_attr, sizeof(hilink_attr));
+    ret = syscfg_read(attr_info_vm_id, hilink_attr, sizeof(hilink_attr));
     if (ret != sizeof(hilink_attr)) {
         printf("hilink_attr_info_read err:%d", ret);
         return;

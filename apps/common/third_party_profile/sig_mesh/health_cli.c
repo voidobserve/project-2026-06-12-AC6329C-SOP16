@@ -9,7 +9,6 @@
 #include "adaptation.h"
 #include "net.h"
 #include "foundation.h"
-#include "msg.h"
 
 #define LOG_TAG             "[MESH-healthcli]"
 #define LOG_INFO_ENABLE
@@ -33,7 +32,9 @@
 #pragma code_seg(".ble_mesh_code")
 #endif /* MESH_RAM_AND_CODE_MAP_DETAIL */
 
-static s32_t msg_timeout;
+#if defined(CONFIG_BT_MESH_HEALTH_CLI)
+
+static s32_t msg_timeout = K_SECONDS(2);
 
 static struct bt_mesh_health_cli *health_cli;
 
@@ -45,360 +46,455 @@ struct health_fault_param {
     size_t *fault_count;
 };
 
-static int health_fault_status(const struct bt_mesh_model *model,
-                               struct bt_mesh_msg_ctx *ctx,
-                               struct net_buf_simple *buf)
+static void health_fault_status(struct bt_mesh_model *model,
+                                struct bt_mesh_msg_ctx *ctx,
+                                struct net_buf_simple *buf)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
     struct health_fault_param *param;
     u8_t test_id;
     u16_t cid;
 
-    LOG_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s", ctx->net_idx, ctx->app_idx,
-            ctx->addr, buf->len, bt_hex(buf->data, buf->len));
+    BT_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s",
+           ctx->net_idx, ctx->app_idx, ctx->addr, buf->len,
+           bt_hex(buf->data, buf->len));
+
+    if (health_cli->op_pending != OP_HEALTH_FAULT_STATUS) {
+        BT_WARN("Unexpected Health Fault Status message");
+        return;
+    }
+
+    param = health_cli->op_param;
 
     test_id = net_buf_simple_pull_u8(buf);
+    if (param->expect_test_id && test_id != *param->expect_test_id) {
+        BT_WARN("Health fault with unexpected Test ID");
+        return;
+    }
+
     cid = net_buf_simple_pull_le16(buf);
-
-    if (bt_mesh_msg_ack_ctx_match(&cli->ack_ctx,
-                                  OP_HEALTH_FAULT_STATUS, ctx->addr,
-                                  (void **)&param)) {
-        if (param->expect_test_id &&
-            (test_id != *param->expect_test_id)) {
-            goto done;
-        }
-
-        if (cid != param->cid) {
-            goto done;
-        }
-
-        if (param->test_id) {
-            *param->test_id = test_id;
-        }
-
-        if (param->faults && param->fault_count) {
-            if (buf->len > *param->fault_count) {
-                LOG_WRN("Got more faults than there's space for");
-            } else {
-                *param->fault_count = buf->len;
-            }
-
-            memcpy(param->faults, buf->data, *param->fault_count);
-        }
-
-        bt_mesh_msg_ack_ctx_rx(&cli->ack_ctx);
+    if (cid != param->cid) {
+        BT_WARN("Health fault with unexpected Company ID");
+        return;
     }
 
-done:
-    if (cli->fault_status) {
-        cli->fault_status(cli, ctx->addr, test_id, cid,
-                          buf->data, buf->len);
+    if (param->test_id) {
+        *param->test_id = test_id;
     }
 
-    return 0;
+    if (buf->len > *param->fault_count) {
+        BT_WARN("Got more faults than there's space for");
+    } else {
+        *param->fault_count = buf->len;
+    }
+
+    memcpy(param->faults, buf->data, *param->fault_count);
+
+    k_sem_give(&health_cli->op_sync);
 }
 
-static int health_current_status(const struct bt_mesh_model *model,
-                                 struct bt_mesh_msg_ctx *ctx,
-                                 struct net_buf_simple *buf)
+static void health_current_status(struct bt_mesh_model *model,
+                                  struct bt_mesh_msg_ctx *ctx,
+                                  struct net_buf_simple *buf)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
+    struct bt_mesh_health_cli *cli = model->user_data;
     u8_t test_id;
     u16_t cid;
 
-    LOG_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s", ctx->net_idx, ctx->app_idx,
-            ctx->addr, buf->len, bt_hex(buf->data, buf->len));
+    BT_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s",
+           ctx->net_idx, ctx->app_idx, ctx->addr, buf->len,
+           bt_hex(buf->data, buf->len));
 
     test_id = net_buf_simple_pull_u8(buf);
     cid = net_buf_simple_pull_le16(buf);
 
-    LOG_DBG("Test ID 0x%02x Company ID 0x%04x Fault Count %u", test_id, cid, buf->len);
+    BT_DBG("Test ID 0x%02x Company ID 0x%04x Fault Count %u",
+           test_id, cid, buf->len);
 
-    if (cli->current_status) {
-        cli->current_status(cli, ctx->addr, test_id, cid,
-                            buf->data, buf->len);
+    if (!cli->current_status) {
+        BT_WARN("No Current Status callback available");
+        return;
     }
 
-    return 0;
+    cli->current_status(cli, ctx->addr, test_id, cid, buf->data, buf->len);
 }
 
 struct health_period_param {
     u8_t *divisor;
 };
 
-static int health_period_status(const struct bt_mesh_model *model,
-                                struct bt_mesh_msg_ctx *ctx,
-                                struct net_buf_simple *buf)
+static void health_period_status(struct bt_mesh_model *model,
+                                 struct bt_mesh_msg_ctx *ctx,
+                                 struct net_buf_simple *buf)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
     struct health_period_param *param;
-    u8_t divisor;
 
-    LOG_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s", ctx->net_idx, ctx->app_idx,
-            ctx->addr, buf->len, bt_hex(buf->data, buf->len));
+    BT_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s",
+           ctx->net_idx, ctx->app_idx, ctx->addr, buf->len,
+           bt_hex(buf->data, buf->len));
 
-    divisor = net_buf_simple_pull_u8(buf);
-
-    if (bt_mesh_msg_ack_ctx_match(&cli->ack_ctx,
-                                  OP_HEALTH_PERIOD_STATUS, ctx->addr,
-                                  (void **)&param)) {
-        if (param->divisor) {
-            *param->divisor = divisor;
-        }
-
-        bt_mesh_msg_ack_ctx_rx(&cli->ack_ctx);
+    if (health_cli->op_pending != OP_HEALTH_PERIOD_STATUS) {
+        BT_WARN("Unexpected Health Period Status message");
+        return;
     }
 
-    if (cli->period_status) {
-        cli->period_status(cli, ctx->addr, divisor);
-    }
+    param = health_cli->op_param;
 
-    return 0;
+    *param->divisor = net_buf_simple_pull_u8(buf);
+
+    k_sem_give(&health_cli->op_sync);
 }
 
 struct health_attention_param {
     u8_t *attention;
 };
 
-static int health_attention_status(const struct bt_mesh_model *model,
-                                   struct bt_mesh_msg_ctx *ctx,
-                                   struct net_buf_simple *buf)
+static void health_attention_status(struct bt_mesh_model *model,
+                                    struct bt_mesh_msg_ctx *ctx,
+                                    struct net_buf_simple *buf)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
     struct health_attention_param *param;
-    u8_t attention;
 
-    LOG_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s", ctx->net_idx, ctx->app_idx,
-            ctx->addr, buf->len, bt_hex(buf->data, buf->len));
+    BT_DBG("net_idx 0x%04x app_idx 0x%04x src 0x%04x len %u: %s",
+           ctx->net_idx, ctx->app_idx, ctx->addr, buf->len,
+           bt_hex(buf->data, buf->len));
 
-    attention = net_buf_simple_pull_u8(buf);
-
-    if (bt_mesh_msg_ack_ctx_match(&cli->ack_ctx, OP_ATTENTION_STATUS,
-                                  ctx->addr, (void **)&param)) {
-        if (param->attention) {
-            *param->attention = attention;
-        }
-
-        bt_mesh_msg_ack_ctx_rx(&cli->ack_ctx);
+    if (health_cli->op_pending != OP_ATTENTION_STATUS) {
+        BT_WARN("Unexpected Health Attention Status message");
+        return;
     }
 
-    if (cli->attention_status) {
-        cli->attention_status(cli, ctx->addr, attention);
+    param = health_cli->op_param;
+
+    if (param->attention) {
+        *param->attention = net_buf_simple_pull_u8(buf);
     }
-    return 0;
+
+    k_sem_give(&health_cli->op_sync);
 }
 
 const struct bt_mesh_model_op bt_mesh_health_cli_op[] = {
-    { OP_HEALTH_FAULT_STATUS,     BT_MESH_LEN_MIN(3),    health_fault_status },
-    { OP_HEALTH_CURRENT_STATUS,   BT_MESH_LEN_MIN(3),    health_current_status },
-    { OP_HEALTH_PERIOD_STATUS,    BT_MESH_LEN_EXACT(1),  health_period_status },
-    { OP_ATTENTION_STATUS,        BT_MESH_LEN_EXACT(1),  health_attention_status },
+    { OP_HEALTH_FAULT_STATUS,    3,   health_fault_status },
+    { OP_HEALTH_CURRENT_STATUS,  3,   health_current_status },
+    { OP_HEALTH_PERIOD_STATUS,   1,   health_period_status },
+    { OP_ATTENTION_STATUS,       1,   health_attention_status },
     BT_MESH_MODEL_OP_END,
 };
 
-int bt_mesh_health_cli_attention_get(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                     u8_t *attention)
+static int cli_prepare(void *param, u32_t op)
 {
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_ATTENTION_GET, 0);
+    if (!health_cli) {
+        BT_ERR("No available Health Client context!");
+        return -EINVAL;
+    }
+
+    if (health_cli->op_pending) {
+        BT_WARN("Another synchronous operation pending");
+        return -EBUSY;
+    }
+
+    health_cli->op_param = param;
+    health_cli->op_pending = op;
+
+    return 0;
+}
+
+static void cli_reset(void)
+{
+    health_cli->op_pending = 0;
+    health_cli->op_param = NULL;
+}
+
+static int cli_wait(void)
+{
+    int err;
+
+    err = k_sem_take(&health_cli->op_sync, msg_timeout);
+
+    cli_reset();
+
+    return err;
+}
+
+int bt_mesh_health_attention_get(u16_t net_idx, u16_t addr, u16_t app_idx,
+                                 u8_t *attention)
+{
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 0 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
+    };
     struct health_attention_param param = {
         .attention = attention,
     };
+    int err;
+
+    err = cli_prepare(&param, OP_ATTENTION_STATUS);
+    if (err) {
+        return err;
+    }
 
     bt_mesh_model_msg_init(&msg, OP_ATTENTION_GET);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_ATTENTION_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
-    };
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
 
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg, attention ? &rsp : NULL);
+    return cli_wait();
 }
 
-int bt_mesh_health_cli_attention_set(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                     u8_t attention, u8_t *updated_attention)
+int bt_mesh_health_attention_set(u16_t net_idx, u16_t addr, u16_t app_idx,
+                                 u8_t attention, u8_t *updated_attention)
 {
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_ATTENTION_SET, 1);
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 1 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
+    };
     struct health_attention_param param = {
         .attention = updated_attention,
     };
+    int err;
 
-    bt_mesh_model_msg_init(&msg, OP_ATTENTION_SET);
+    err = cli_prepare(&param, OP_ATTENTION_STATUS);
+    if (err) {
+        return err;
+    }
+
+    if (updated_attention) {
+        bt_mesh_model_msg_init(&msg, OP_ATTENTION_SET);
+    } else {
+        bt_mesh_model_msg_init(&msg, OP_ATTENTION_SET_UNREL);
+    }
+
     net_buf_simple_add_u8(&msg, attention);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_ATTENTION_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
+
+    if (!updated_attention) {
+        cli_reset();
+        return 0;
+    }
+
+    return cli_wait();
+}
+
+int bt_mesh_health_period_get(u16_t net_idx, u16_t addr, u16_t app_idx,
+                              u8_t *divisor)
+{
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 0 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
     };
-
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg, updated_attention ? &rsp : NULL);
-}
-
-int bt_mesh_health_cli_attention_set_unack(struct bt_mesh_health_cli *cli,
-        struct bt_mesh_msg_ctx *ctx, u8_t attention)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_ATTENTION_SET_UNREL, 1);
-
-    bt_mesh_model_msg_init(&msg, OP_ATTENTION_SET_UNREL);
-    net_buf_simple_add_u8(&msg, attention);
-
-    return bt_mesh_msg_send(cli->model, ctx, &msg);
-}
-
-int bt_mesh_health_cli_period_get(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                  u8_t *divisor)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_PERIOD_GET, 0);
     struct health_period_param param = {
         .divisor = divisor,
     };
+    int err;
+
+    err = cli_prepare(&param, OP_HEALTH_PERIOD_STATUS);
+    if (err) {
+        return err;
+    }
 
     bt_mesh_model_msg_init(&msg, OP_HEALTH_PERIOD_GET);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_HEALTH_PERIOD_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
-    };
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
 
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg, divisor ? &rsp : NULL);
+    return cli_wait();
 }
 
-int bt_mesh_health_cli_period_set(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                  u8_t divisor, u8_t *updated_divisor)
+int bt_mesh_health_period_set(u16_t net_idx, u16_t addr, u16_t app_idx,
+                              u8_t divisor, u8_t *updated_divisor)
 {
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_PERIOD_SET, 1);
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 1 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
+    };
     struct health_period_param param = {
         .divisor = updated_divisor,
     };
+    int err;
 
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_PERIOD_SET);
+    err = cli_prepare(&param, OP_HEALTH_PERIOD_STATUS);
+    if (err) {
+        return err;
+    }
+
+    if (updated_divisor) {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_PERIOD_SET);
+    } else {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_PERIOD_SET_UNREL);
+    }
+
     net_buf_simple_add_u8(&msg, divisor);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_HEALTH_PERIOD_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
+
+    if (!updated_divisor) {
+        cli_reset();
+        return 0;
+    }
+
+    return cli_wait();
+}
+
+int bt_mesh_health_fault_test(u16_t net_idx, u16_t addr, u16_t app_idx,
+                              u16_t cid, u8_t test_id, u8_t *faults,
+                              size_t *fault_count)
+{
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 3 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
     };
-
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg, updated_divisor ? &rsp : NULL);
-}
-
-int bt_mesh_health_cli_period_set_unack(struct bt_mesh_health_cli *cli,
-                                        struct bt_mesh_msg_ctx *ctx, u8_t divisor)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_PERIOD_SET_UNREL, 1);
-
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_PERIOD_SET_UNREL);
-    net_buf_simple_add_u8(&msg, divisor);
-
-    return bt_mesh_msg_send(cli->model, ctx, &msg);
-}
-
-int bt_mesh_health_cli_fault_test(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                  u16_t cid, u8_t test_id, u8_t *faults,
-                                  size_t *fault_count)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_FAULT_TEST, 3);
     struct health_fault_param param = {
         .cid = cid,
         .expect_test_id = &test_id,
         .faults = faults,
         .fault_count = fault_count,
     };
+    int err;
 
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_TEST);
+    err = cli_prepare(&param, OP_HEALTH_FAULT_STATUS);
+    if (err) {
+        return err;
+    }
+
+    if (faults) {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_TEST);
+    } else {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_TEST_UNREL);
+    }
+
     net_buf_simple_add_u8(&msg, test_id);
     net_buf_simple_add_le16(&msg, cid);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_HEALTH_FAULT_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
+
+    if (!faults) {
+        cli_reset();
+        return 0;
+    }
+
+    return cli_wait();
+}
+
+int bt_mesh_health_fault_clear(u16_t net_idx, u16_t addr, u16_t app_idx,
+                               u16_t cid, u8_t *test_id, u8_t *faults,
+                               size_t *fault_count)
+{
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 2 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
     };
-
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg, &rsp);
-}
-
-int bt_mesh_health_cli_fault_test_unack(struct bt_mesh_health_cli *cli,
-                                        struct bt_mesh_msg_ctx *ctx, u16_t cid, u8_t test_id)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_FAULT_TEST_UNREL, 3);
-
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_TEST_UNREL);
-    net_buf_simple_add_u8(&msg, test_id);
-    net_buf_simple_add_le16(&msg, cid);
-
-    return bt_mesh_msg_send(cli->model, ctx, &msg);
-}
-
-int bt_mesh_health_cli_fault_clear(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                   u16_t cid, u8_t *test_id, u8_t *faults,
-                                   size_t *fault_count)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_FAULT_CLEAR, 2);
     struct health_fault_param param = {
         .cid = cid,
         .test_id = test_id,
         .faults = faults,
         .fault_count = fault_count,
     };
+    int err;
 
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_CLEAR);
+    err = cli_prepare(&param, OP_HEALTH_FAULT_STATUS);
+    if (err) {
+        return err;
+    }
+
+    if (test_id) {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_CLEAR);
+    } else {
+        bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_CLEAR_UNREL);
+    }
+
     net_buf_simple_add_le16(&msg, cid);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_HEALTH_FAULT_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
+
+    if (!test_id) {
+        cli_reset();
+        return 0;
+    }
+
+    return cli_wait();
+}
+
+int bt_mesh_health_fault_get(u16_t net_idx, u16_t addr, u16_t app_idx,
+                             u16_t cid, u8_t *test_id, u8_t *faults,
+                             size_t *fault_count)
+{
+    NET_BUF_SIMPLE_DEFINE(msg, 2 + 2 + 4);
+    struct bt_mesh_msg_ctx ctx = {
+        .net_idx = net_idx,
+        .app_idx = app_idx,
+        .addr = addr,
+        .send_ttl = BT_MESH_TTL_DEFAULT,
     };
-
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg,
-                                 (!test_id && (!faults || !fault_count)) ? NULL : &rsp);
-}
-
-int bt_mesh_health_cli_fault_clear_unack(struct bt_mesh_health_cli *cli,
-        struct bt_mesh_msg_ctx *ctx, u16_t cid)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_FAULT_CLEAR_UNREL, 2);
-
-    bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_CLEAR_UNREL);
-    net_buf_simple_add_le16(&msg, cid);
-
-    return bt_mesh_msg_send(cli->model, ctx, &msg);
-}
-
-int bt_mesh_health_cli_fault_get(struct bt_mesh_health_cli *cli, struct bt_mesh_msg_ctx *ctx,
-                                 u16_t cid, u8_t *test_id, u8_t *faults,
-                                 size_t *fault_count)
-{
-    BT_MESH_MODEL_BUF_DEFINE(msg, OP_HEALTH_FAULT_GET, 2);
     struct health_fault_param param = {
         .cid = cid,
         .test_id = test_id,
         .faults = faults,
         .fault_count = fault_count,
     };
+    int err;
+
+    err = cli_prepare(&param, OP_HEALTH_FAULT_STATUS);
+    if (err) {
+        return err;
+    }
 
     bt_mesh_model_msg_init(&msg, OP_HEALTH_FAULT_GET);
     net_buf_simple_add_le16(&msg, cid);
 
-    const struct bt_mesh_msg_rsp_ctx rsp = {
-        .ack = &cli->ack_ctx,
-        .op = OP_HEALTH_FAULT_STATUS,
-        .user_data = &param,
-        .timeout = msg_timeout,
-    };
+    err = bt_mesh_model_send(health_cli->model, &ctx, &msg, NULL, NULL);
+    if (err) {
+        BT_ERR("model_send() failed (err %d)", err);
+        cli_reset();
+        return err;
+    }
 
-    return bt_mesh_msg_ackd_send(cli->model, ctx, &msg,
-                                 (!test_id && (!faults || !fault_count)) ? NULL : &rsp);
+    return cli_wait();
 }
 
 s32_t bt_mesh_health_cli_timeout_get(void)
@@ -411,35 +507,40 @@ void bt_mesh_health_cli_timeout_set(s32_t timeout)
     msg_timeout = timeout;
 }
 
-static int health_cli_init(const struct bt_mesh_model *model)
+int bt_mesh_health_cli_set(struct bt_mesh_model *model)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
-
-    LOG_DBG("primary %u", bt_mesh_model_in_primary(model));
-
-    if (!cli) {
-        LOG_ERR("No Health Client context provided");
+    if (!model->user_data) {
+        BT_ERR("No Health Client context for given model");
         return -EINVAL;
     }
 
-    cli->model = model;
-    msg_timeout = CONFIG_BT_MESH_HEALTH_CLI_TIMEOUT;
+    health_cli = model->user_data;
 
-    cli->pub.msg = &cli->pub_buf;
-    net_buf_simple_init_with_data(&cli->pub_buf, cli->pub_data, sizeof(cli->pub_data));
-
-    bt_mesh_msg_ack_ctx_init(&cli->ack_ctx);
     return 0;
 }
 
-static void health_cli_reset(const struct bt_mesh_model *model)
+int bt_mesh_health_cli_init(struct bt_mesh_model *model, bool primary)
 {
-    struct bt_mesh_health_cli *cli = model->rt->user_data;
+    struct bt_mesh_health_cli *cli = model->user_data;
 
-    net_buf_simple_reset(cli->pub.msg);
+    BT_DBG("primary %u", primary);
+
+    if (!cli) {
+        BT_ERR("No Health Client context provided");
+        return -EINVAL;
+    }
+
+    cli = model->user_data;
+    cli->model = model;
+
+    k_sem_init(&cli->op_sync, 0, 1);
+
+    /* Set the default health client pointer */
+    if (!health_cli) {
+        health_cli = cli;
+    }
+
+    return 0;
 }
 
-const struct bt_mesh_model_cb bt_mesh_health_cli_cb = {
-    .init = health_cli_init,
-    .reset = health_cli_reset,
-};
+#endif /* defined(CONFIG_BT_MESH_HEALTH_CLI) */

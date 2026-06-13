@@ -17,7 +17,9 @@ int bt_mesh_lpn_friend_sub_cfm(struct bt_mesh_net_rx *rx,
 
 static inline bool bt_mesh_lpn_established(void)
 {
-#if (CONFIG_BT_MESH_LOW_POWER)
+#if defined(CONFIG_BT_MESH_LOW_POWER)
+    BT_MESH_FEATURES_IS_SUPPORT_OPTIMIZE(BT_MESH_FEAT_LOW_POWER) false;
+
     return bt_mesh.lpn.established;
 #else
     return false;
@@ -26,7 +28,7 @@ static inline bool bt_mesh_lpn_established(void)
 
 static inline bool bt_mesh_lpn_match(u16_t addr)
 {
-#if (CONFIG_BT_MESH_LOW_POWER)
+#if defined(CONFIG_BT_MESH_LOW_POWER)
     if (bt_mesh_lpn_established()) {
         return (addr == bt_mesh.lpn.frnd);
     }
@@ -36,20 +38,27 @@ static inline bool bt_mesh_lpn_match(u16_t addr)
 
 static inline bool bt_mesh_lpn_waiting_update(void)
 {
-#if (CONFIG_BT_MESH_LOW_POWER)
+#if defined(CONFIG_BT_MESH_LOW_POWER)
     return (bt_mesh.lpn.state == BT_MESH_LPN_WAIT_UPDATE);
 #else
     return false;
 #endif
 }
 
+static inline bool bt_mesh_lpn_timer(void)
+{
+#if defined(CONFIG_BT_MESH_LPN_AUTO)
+    return (bt_mesh.lpn.state == BT_MESH_LPN_TIMER);
+#else
+    return false;
+#endif
+}
 
 void bt_mesh_lpn_msg_received(struct bt_mesh_net_rx *rx);
 
 void bt_mesh_lpn_group_add(u16_t group);
-void bt_mesh_lpn_group_del(const u16_t *groups, size_t group_count);
+void bt_mesh_lpn_group_del(u16_t *groups, size_t group_count);
 
 void bt_mesh_lpn_disable(bool force);
-void bt_mesh_lpn_friendship_end(void);
 
 int bt_mesh_lpn_init(void);

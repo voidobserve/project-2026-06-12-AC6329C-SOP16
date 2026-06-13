@@ -52,9 +52,6 @@ enum {
     AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,		// 设置循环播放
     AUDIO_IOCTRL_CMD_SET_DEST_PLAYPOS = 0x93,	// 设置指定位置播放
     AUDIO_IOCTRL_CMD_GET_PLAYPOS = 0x94,		// 获取毫秒级时间
-
-    //固件自定义命令(非解码器命令)
-    AUDIO_IOCTRL_CMD_START_SILENCT_DROP = 0x1000,//开头静音数据丢弃处理
 };
 
 /*

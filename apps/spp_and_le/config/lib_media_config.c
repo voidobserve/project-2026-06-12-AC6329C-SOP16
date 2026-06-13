@@ -342,8 +342,6 @@ const int config_mp3_enc_use_layer_3	= 0;
 
 const int config_mp3_dec_speed_mode 	= 0; //FAST_FREQ_restrict | FAST_FILTER_restrict | FAST_CHANNEL_restrict; //3个开关都置上，是最快的解码模式
 
-const int config_mp3_start_silence_drop =  0;//mp3解码开头静音数据丢弃
-
 // 快进快退到文件end返回结束消息
 const int config_decoder_ff_fr_end_return_event_end = 0;
 

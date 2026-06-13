@@ -24,23 +24,6 @@
 
 #if TCFG_USB_SLAVE_ENABLE
 
-static u32 host_type;
-static u32 dev_desc_len;
-static u32 cfg_desc_len;
-void usb_reset_host_type()
-{
-    host_type = HOST_TYPE_ERR;
-    dev_desc_len = 0;
-    cfg_desc_len = 0;
-}
-u32 usb_get_host_type()
-{
-    if (efuse_get_host_type_check_en()) {
-        return host_type;
-    }
-    return HOST_TYPE_UNKNOW;
-}
-
 static const u8 user_stirng[] = {
     24,
     0x03,
@@ -164,49 +147,10 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
                 root2_testing = 1;
             }
 #endif
-            if (dev_desc_len == 0) {
-                dev_desc_len = req->wLength;
-            }
-            if (dev_desc_len == 8) {
-                host_type = HOST_TYPE_IOS;
-                log_info("host_type = %d, ios, line:%d\n", host_type, __LINE__);
-            }
-            break;
-        case USB_DT_CONFIG:
-            if (cfg_desc_len == 0) {
-                cfg_desc_len = req->wLength;
-            }
             break;
         }
         break;
     case USB_REQ_SET_CONFIGURATION:
-        switch (dev_desc_len) {
-        case 18:
-            if (cfg_desc_len == 255) {
-                host_type = HOST_TYPE_WINDOWS;
-                log_info("host_type = %d, windows, line:%d\n", host_type, __LINE__);
-            } else if (cfg_desc_len == 9) {
-                host_type = HOST_TYPE_ANDROID;
-                log_info("host_type = %d, android, line:%d\n", host_type, __LINE__);
-            } else {
-                host_type = HOST_TYPE_UNKNOW;
-                log_info("host_type = %d, unknow, line:%d\n", host_type, __LINE__);
-            }
-            break;
-        case 8:
-            if (cfg_desc_len == 9) {
-                host_type = HOST_TYPE_IOS;
-                log_info("host_type = %d, ios, line:%d\n", host_type, __LINE__);
-            } else {
-                host_type = HOST_TYPE_UNKNOW;
-                log_info("host_type = %d, unknow, line:%d\n", host_type, __LINE__);
-            }
-            break;
-        default:
-            host_type = HOST_TYPE_UNKNOW;
-            log_info("host_type = %d, unknow, line:%d\n", host_type, __LINE__);
-            break;
-        }
         break;
     case USB_REQ_SET_ADDRESS:
         /* if(req->wLength || req->wIndex){                        */
@@ -215,24 +159,6 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
         /*     dump_setup_request(req);                            */
         /*     log_debug_hexdump((u8 *)req, 8);                    */
         /* }                                                       */
-        break;
-    }
-    return ret;
-}
-static u32 setup_interface(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
-{
-    const usb_dev usb_id = usb_device2id(usb_device);
-    u32 ret = 0;
-    switch (req->bRequest) {
-    case UAC_SET_CUR:
-        if (HIBYTE(req->wValue) == 0) {
-            if ((HIBYTE(req->wIndex) == MIC_SELECTOR_UNIT_ID)) {
-                host_type = HOST_TYPE_PS4;
-                log_info("host_type = %d, ps4, line:%d\n", host_type, __LINE__);
-            }
-        }
-        break;
-    default:
         break;
     }
     return ret;
@@ -268,7 +194,6 @@ static u32 user_setup_filter(struct usb_device_t *usb_device, struct usb_ctrlreq
         ret = setup_device(usb_device, request);
         break;
     case USB_RECIP_INTERFACE:
-        ret = setup_interface(usb_device, request);
         break;
     case USB_RECIP_ENDPOINT:
         ret = setup_endpoint(usb_device, request);

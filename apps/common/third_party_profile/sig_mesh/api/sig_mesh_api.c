@@ -110,7 +110,7 @@ void mesh_node_primary_addr_reset(u16 addr)
 
 void mesh_setup(void (*init_cb)(void))
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     hci_core_init();
 

@@ -348,7 +348,7 @@ static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *da
         u8 *local_authkey_data = NULL;
         get_authkey_procode_from_cfg_file(&local_authkey_data, &authkey_len, GET_AUTH_KEY_FROM_EX_CFG);
         if (local_authkey_data && authkey_len) {
-            put_buf(local_authkey_data, authkey_len);
+            putbuf(local_authkey_data, authkey_len);
             offset += add_one_attr(buf, sizeof(buf), offset, ATTR_TYPE_DEV_AUTHKEY, local_authkey_data, authkey_len);
         }
     }

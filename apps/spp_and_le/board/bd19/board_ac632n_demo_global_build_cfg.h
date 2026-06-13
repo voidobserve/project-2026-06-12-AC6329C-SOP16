@@ -4,6 +4,7 @@
 /* 改文件只添加和isd_config.ini相关的配置，用以生成isd_config.ini */
 /* 其他不相关的配置请勿添加在改文件 */
 
+// #include "./board_config.h"
 #ifdef CONFIG_BOARD_AC632N_DEMO
 
 /* Following Macros Affect Periods Of Both Code Compiling And Post-build */
@@ -33,7 +34,7 @@
 /* Following Macros Only For Post Bulid Configuaration */
 
 #define CONFIG_DB_UPDATE_DATA_GENERATE_EN       0       //是否生成db_data.bin(用于第三方协议接入使用)
-#define CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE     1    	//ufw只生成1份4K对齐的代码
+#define CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE     0    	//ufw只生成1份4K对齐的代码
 
 //config for supported chip version
 #ifdef CONFIG_BR30_C_VERSION

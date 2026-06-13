@@ -8,15 +8,11 @@ copy ..\..\app.bin .
 copy ..\..\bd19loader.bin .
 copy ..\..\p11_code.bin .
 copy ..\..\script.ver .
-copy ..\..\flash_params.bin
 
-@REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -flash-params flash_params.bin  
 ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -format all -key 193-AC690X-B718.key
 @REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -format all -key XYH-AC690X-D00C.key
-@rem 下载时覆盖：
-:: -format all 
+@REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -format all 
 ::-reboot 2500
-@REM -key 193-AC690X-B718.key
 
 @rem 删除临时文件-format all
 if exist *.mp3 del *.mp3 

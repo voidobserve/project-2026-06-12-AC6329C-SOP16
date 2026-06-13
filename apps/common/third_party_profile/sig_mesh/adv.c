@@ -15,9 +15,6 @@
 #include "beacon.h"
 #include "prov.h"
 #include "proxy.h"
-#include "pb_gatt_srv.h"
-#include "solicitation.h"
-#include "statistic.h"
 
 #define LOG_TAG             "[MESH-adv]"
 /* #define LOG_INFO_ENABLE */
@@ -41,160 +38,81 @@
 #pragma code_seg(".ble_mesh_code")
 #endif /* MESH_RAM_AND_CODE_MAP_DETAIL */
 
-const uint8_t bt_mesh_adv_type[BT_MESH_ADV_TYPES] = {
-    [BT_MESH_ADV_PROV]   = BT_DATA_MESH_PROV,
-    [BT_MESH_ADV_DATA]   = BT_DATA_MESH_MESSAGE,
-    [BT_MESH_ADV_BEACON] = BT_DATA_MESH_BEACON,
-    [BT_MESH_ADV_URI]    = BT_DATA_URI,
-};
-
-static bool active_scanning;
-// static K_FIFO_DEFINE(bt_mesh_adv_queue); 	//for compiler, not used now.
-// static K_FIFO_DEFINE(bt_mesh_relay_queue);	//for compiler, not used now.
-// static K_FIFO_DEFINE(bt_mesh_friend_queue);	//for compiler, not used now.
-
-// K_MEM_SLAB_DEFINE_STATIC(local_adv_pool, sizeof(struct bt_mesh_adv),
-// 			 CONFIG_BT_MESH_ADV_BUF_COUNT, __alignof__(struct bt_mesh_adv));	//for compiler, not used now.
-
-#if defined(CONFIG_BT_MESH_RELAY_BUF_COUNT)
-K_MEM_SLAB_DEFINE_STATIC(relay_adv_pool, sizeof(struct bt_mesh_adv),
-                         CONFIG_BT_MESH_RELAY_BUF_COUNT, __alignof__(struct bt_mesh_adv));
-#endif
-
-#if (CONFIG_BT_MESH_ADV_EXT_FRIEND_SEPARATE)
-K_MEM_SLAB_DEFINE_STATIC(friend_adv_pool, sizeof(struct bt_mesh_adv),
-                         CONFIG_BT_MESH_FRIEND_LPN_COUNT, __alignof__(struct bt_mesh_adv));
-#endif
-
-//for compiler, not used now.
-#if (CONFIG_BT_MESH_RELAY)
-struct k_mem_slab *relay_adv_pool;
-#endif
-struct k_mem_slab *local_adv_pool;
-
-#if NET_BUF_USE_MALLOC
 NET_BUF_POOL_DEFINE(adv_buf_pool, CONFIG_BT_MESH_ADV_BUF_COUNT,
                     BT_MESH_ADV_DATA_SIZE, BT_MESH_ADV_USER_DATA_SIZE, NULL);
+
+extern void newbuf_replace(struct net_buf_pool *pool);
+
+#if NET_BUF_USE_MALLOC
 static struct bt_mesh_adv *adv_pool;
 #else
 static struct bt_mesh_adv adv_pool[CONFIG_BT_MESH_ADV_BUF_COUNT];
 #endif /* NET_BUF_USE_MALLOC */
-void bt_mesh_adv_send_start(u16_t duration, int err, struct bt_mesh_adv_ctx *ctx)
+
+static struct bt_mesh_adv *adv_alloc(int id)
 {
-    if (!ctx->started) {
-        ctx->started = 1;
+    return &adv_pool[id];
+}
 
-        if (ctx->cb && ctx->cb->start) {
-            ctx->cb->start(duration, err, ctx->cb_data);
-        }
-
-        if (err) {
-            ctx->cb = NULL;
-        } else if (IS_ENABLED(CONFIG_BT_MESH_STATISTIC)) {
-            bt_mesh_stat_succeeded_count(ctx);
-        }
+static inline void adv_send_start(u16_t duration, int err,
+                                  const struct bt_mesh_send_cb *cb,
+                                  void *cb_data)
+{
+    if (cb && cb->start) {
+        cb->start(duration, err, cb_data);
     }
 }
 
-void bt_mesh_adv_send_end(int err, struct bt_mesh_adv_ctx const *ctx)
+static inline void adv_send_end(int err, const struct bt_mesh_send_cb *cb,
+                                void *cb_data)
 {
-    if (ctx->started && ctx->cb && ctx->cb->end) {
-        ctx->cb->end(err, ctx->cb_data);
+    if (cb && cb->end) {
+        cb->end(err, cb_data);
     }
 }
 
-static struct bt_mesh_adv *adv_create_from_pool(struct k_mem_slab *buf_pool,
+struct net_buf *bt_mesh_adv_create_from_pool(struct net_buf_pool *pool,
+        bt_mesh_adv_alloc_t get_id,
         enum bt_mesh_adv_type type,
-        enum bt_mesh_adv_tag tag,
-        uint8_t xmit, k_timeout_t timeout)
+        u8_t xmit, s32_t timeout)
 {
-    struct bt_mesh_adv_ctx *ctx;
     struct bt_mesh_adv *adv;
-    int err;
+    struct net_buf *buf;
 
-    if (atomic_test_bit(bt_mesh.flags, BT_MESH_SUSPENDED)) {
-        LOG_WRN("Refusing to allocate buffer while suspended");
+    buf = net_buf_alloc(pool, timeout);
+    if (!buf) {
         return NULL;
     }
 
-    // err = k_mem_slab_alloc(buf_pool, (void **)&adv, timeout);
-    adv = malloc(sizeof(struct bt_mesh_adv));
+    adv = get_id(net_buf_id(buf));
+    BT_MESH_ADV(buf) = adv;
 
-    if (!adv) {
-        return NULL;
-    }
+    (void)memset(adv, 0, sizeof(*adv));
 
-    adv->__ref = 1;
+    adv->type         = type;
+    adv->xmit         = xmit;
 
-    net_buf_simple_init_with_data(&adv->b, adv->__bufs, BT_MESH_ADV_DATA_SIZE);
-    net_buf_simple_reset(&adv->b);
+#if MESH_ADAPTATION_OPTIMIZE
+    buf->__buf += BT_MESH_ADV_DATA_HEAD_SIZE;
+    buf->data = buf->__buf;
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
-    ctx = &adv->ctx;
+    BT_INFO("alloc buf addr=0x%x", buf);
 
-    (void)memset(ctx, 0, sizeof(*ctx));
-
-    ctx->type         = type;
-    ctx->tag          = tag;
-    ctx->xmit         = xmit;
-
-    return adv;
+    return buf;
 }
 
-struct bt_mesh_adv *bt_mesh_adv_ref(struct bt_mesh_adv *adv)
+struct net_buf *bt_mesh_adv_create(enum bt_mesh_adv_type type, u8_t xmit,
+                                   s32_t timeout)
 {
-    __ASSERT_NO_MSG(adv->__ref < UINT8_MAX);
-
-    adv->__ref++;
-
-    return adv;
-}
-
-void bt_mesh_adv_unref(struct bt_mesh_adv *adv)
-{
-    __ASSERT_NO_MSG(adv->__ref > 0);
-
-    if (--adv->__ref > 0) {
-        return;
+#if CONFIG_BUF_REPLACE_EN
+    if (0 == adv_buf_pool.free_count) {
+        newbuf_replace(&adv_buf_pool);
     }
+#endif /* CONFIG_BUF_REPLACE_EN */
 
-    // struct k_mem_slab *slab = &local_adv_pool;	//for compiler, not used now.
-
-#if (CONFIG_BT_MESH_RELAY)
-    if (adv->ctx.tag == BT_MESH_ADV_TAG_RELAY) {
-        // slab = &relay_adv_pool;	//for compiler, not used now.
-    }
-#endif
-
-#if (CONFIG_BT_MESH_ADV_EXT_FRIEND_SEPARATE)
-    if (adv->ctx.tag == BT_MESH_ADV_TAG_FRIEND) {
-        slab = &friend_adv_pool;
-    }
-#endif
-
-    // k_mem_slab_free(slab, (void *)adv);	//for compiler, not used now.
-    free((void *)adv);
-}
-
-struct bt_mesh_adv *bt_mesh_adv_create(enum bt_mesh_adv_type type,
-                                       enum bt_mesh_adv_tag tag,
-                                       uint8_t xmit, k_timeout_t timeout)
-{
-#if (CONFIG_BT_MESH_RELAY)
-    if (tag == BT_MESH_ADV_TAG_RELAY) {
-        return adv_create_from_pool(&relay_adv_pool,
-                                    type, tag, xmit, timeout);	//for compiler, not used now.
-    }
-#endif
-
-#if (CONFIG_BT_MESH_ADV_EXT_FRIEND_SEPARATE)
-    if (tag == BT_MESH_ADV_TAG_FRIEND) {
-        return adv_create_from_pool(&friend_adv_pool,
-                                    type, tag, xmit, timeout);
-    }
-#endif
-
-    return adv_create_from_pool(&local_adv_pool, type,
-                                tag, xmit, timeout);	//for compiler, not used now.
+    return bt_mesh_adv_create_from_pool(&adv_buf_pool, adv_alloc, type,
+                                        xmit, timeout);
 }
 
 static void bt_mesh_scan_cb(const bt_addr_le_t *addr, s8_t rssi,
@@ -204,7 +122,7 @@ static void bt_mesh_scan_cb(const bt_addr_le_t *addr, s8_t rssi,
         return;
     }
 
-    // LOG_DBG("len %u: %s", buf->len, bt_hex(buf->data, buf->len));
+    /* BT_DBG("len %u: %s", buf->len, bt_hex(buf->data, buf->len)); */
 
     while (buf->len > 1) {
         struct net_buf_simple_state state;
@@ -217,7 +135,7 @@ static void bt_mesh_scan_cb(const bt_addr_le_t *addr, s8_t rssi,
         }
 
         if (len > buf->len) {
-            LOG_WRN("AD malformed");
+            BT_WARN("AD malformed");
             return;
         }
 
@@ -229,27 +147,18 @@ static void bt_mesh_scan_cb(const bt_addr_le_t *addr, s8_t rssi,
 
         switch (type) {
         case BT_DATA_MESH_MESSAGE:
-            LOG_INF("\n< ADV-BT_DATA_MESH_MESSAGE >\n");
+            BT_INFO("\n< ADV-BT_DATA_MESH_MESSAGE >\n");
             bt_mesh_net_recv(buf, rssi, BT_MESH_NET_IF_ADV);
             break;
-#if (CONFIG_BT_MESH_PB_ADV)
+#if defined(CONFIG_BT_MESH_PB_ADV)
         case BT_DATA_MESH_PROV:
-            LOG_INF("\n< ADV-BT_DATA_MESH_PROV >\n");
+            BT_INFO("\n< ADV-BT_DATA_MESH_PROV >\n");
             bt_mesh_pb_adv_recv(buf);
             break;
 #endif
         case BT_DATA_MESH_BEACON:
-            LOG_INF("\n< ADV-BT_DATA_MESH_BEACON>\n");
+            BT_INFO("\n< ADV-BT_DATA_MESH_BEACON>\n");
             bt_mesh_beacon_recv(buf);
-            break;
-        case BT_DATA_UUID16_SOME:
-        /* Fall through */
-        case BT_DATA_UUID16_ALL:
-            if (IS_ENABLED(CONFIG_BT_MESH_OD_PRIV_PROXY_SRV)) {
-                /* Restore buffer with Solicitation PDU */
-                net_buf_simple_restore(buf, &state);
-                bt_mesh_sol_recv(buf, len - 1);
-            }
             break;
         default:
             break;
@@ -260,49 +169,39 @@ static void bt_mesh_scan_cb(const bt_addr_le_t *addr, s8_t rssi,
     }
 }
 
-int bt_mesh_scan_active_set(bool active)
-{
-    if (active_scanning == active) {
-        return 0;
-    }
-
-    active_scanning = active;
-    bt_mesh_scan_disable();
-    return bt_mesh_scan_enable();
-}
-
 int bt_mesh_scan_enable(void)
 {
-    LOG_DBG("");
+    BT_DBG("");
 
     return bt_le_scan_start(bt_mesh_scan_cb);
 }
 
 int bt_mesh_scan_disable(void)
 {
-    LOG_DBG("");
+    BT_DBG("");
 
     return bt_le_scan_stop();
 }
 
 #if NET_BUF_USE_MALLOC
+
 #include "system/malloc.h"
 
 void bt_mesh_adv_buf_alloc(void)
 {
-    LOG_DBG("--func=%s, adv buffer cnt = %d", __FUNCTION__, config_bt_mesh_adv_buf_count);
+    BT_DBG("--func=%s, adv buffer cnt = %d", __FUNCTION__, config_bt_mesh_adv_buf_count);
 
     u32 buf_size;
     u32 net_buf_p, net_buf_data_p, adv_pool_p;
 
     buf_size = sizeof(struct net_buf) * config_bt_mesh_adv_buf_count;
-    LOG_DBG("net_buf size=0x%x", buf_size);
+    BT_DBG("net_buf size=0x%x", buf_size);
     net_buf_data_p = buf_size;
     buf_size += ALIGN_4BYTE(config_bt_mesh_adv_buf_count * BT_MESH_ADV_DATA_SIZE);
-    LOG_DBG("net_buf_data size=0x%x", ALIGN_4BYTE(config_bt_mesh_adv_buf_count * BT_MESH_ADV_DATA_SIZE));
+    BT_DBG("net_buf_data size=0x%x", ALIGN_4BYTE(config_bt_mesh_adv_buf_count * BT_MESH_ADV_DATA_SIZE));
     adv_pool_p = buf_size;
     buf_size += (sizeof(struct bt_mesh_adv) * config_bt_mesh_adv_buf_count);
-    LOG_DBG("adv_pool size=0x%x", sizeof(struct bt_mesh_adv) * config_bt_mesh_adv_buf_count);
+    BT_DBG("adv_pool size=0x%x", sizeof(struct bt_mesh_adv) * config_bt_mesh_adv_buf_count);
 
     net_buf_p = (u32)malloc(buf_size);
     ASSERT(net_buf_p);
@@ -315,16 +214,17 @@ void bt_mesh_adv_buf_alloc(void)
                    net_buf_p, net_buf_data_p, (struct bt_mesh_adv *)adv_pool_p,
                    config_bt_mesh_adv_buf_count);
 
-    LOG_DBG("total buf_size=0x%x", buf_size);
-    LOG_DBG("net_buf addr=0x%x", net_buf_p);
-    LOG_DBG("net_buf_data addr=0x%x", net_buf_data_p);
-    LOG_DBG("adv_pool addr=0x%x", adv_pool_p);
-    // LOG_DBG("*fixed->data_pool=0x%x", *((u32 *)net_buf_fixed_adv_buf_pool.data_pool));
-    // LOG_DBG("net_buf_adv_buf_pool user_data addr=0x%x\r\n", net_buf_adv_buf_pool->user_data);
+    BT_DBG("total buf_size=0x%x", buf_size);
+    BT_DBG("net_buf addr=0x%x", net_buf_p);
+    BT_DBG("net_buf_data addr=0x%x", net_buf_data_p);
+    BT_DBG("adv_pool addr=0x%x", adv_pool_p);
+    BT_DBG("*fixed->data_pool=0x%x", *((u32 *)net_buf_fixed_adv_buf_pool.data_pool));
+    BT_DBG("net_buf_adv_buf_pool user_data addr=0x%x\r\n", net_buf_adv_buf_pool->user_data);
 }
 
 void bt_mesh_adv_buf_free(void)
 {
     free(NET_BUF_FREE(adv_buf_pool));
 }
+
 #endif /* NET_BUF_USE_MALLOC */

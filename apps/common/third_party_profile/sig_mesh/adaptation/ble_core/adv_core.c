@@ -16,8 +16,8 @@
 #include "model_api.h"
 
 #define LOG_TAG             "[MESH-adv_core]"
-// #define LOG_INFO_ENABLE
-// #define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE
@@ -25,9 +25,9 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-void bt_mesh_adv_gatt_update(void) {}
+void bt_mesh_adv_update(void) {}
 
-void bt_mesh_adv_send(struct bt_mesh_adv *adv, const struct bt_mesh_send_cb *cb, void *cb_data) {}
+void bt_mesh_adv_send(struct net_buf *buf, const struct bt_mesh_send_cb *cb, void *cb_data) {}
 
 void bt_mesh_adv_init(void) {}
 
@@ -40,6 +40,9 @@ void bt_mesh_adv_init(void) {}
 #define sys_timer_add               sys_hi_timer_add
 #define sys_timer_change_period     sys_hi_timer_modify
 #define sys_timer_remove            sys_hi_timer_del
+
+/* #undef BT_INFO */
+/* #define BT_INFO */
 
 #endif /* MESH_ADV_SEND_USE_HI_TIMER */
 
@@ -77,8 +80,8 @@ static sys_slist_t adv_list = {
 };
 
 static void ble_adv_enable(bool en);
-static bool adv_send(struct bt_mesh_adv *adv);
-static void fresh_adv_info(struct bt_mesh_adv *adv);
+static bool adv_send(struct net_buf *buf);
+static void fresh_adv_info(struct net_buf *buf);
 void resume_mesh_gatt_proxy_adv_thread(void);
 extern void unprovision_connectable_adv(void);
 extern void proxy_connectable_adv(void);
@@ -90,47 +93,47 @@ void ble_set_scan_enable(bool en);
 
 static u16 mesh_adv_send_start(void *param)
 {
-    struct bt_mesh_adv *buf = param;
+    struct net_buf *buf = param;
 
-    // if (BT_MESH_ADV(buf)->delay) {   //Don't run these because BT_MESH_ADV(buf)->delay can't be 1.
-    //     BT_MESH_ADV(buf)->delay = 0;
-    // fresh_adv_info(buf);
+    if (BT_MESH_ADV(buf)->delay) {
+        BT_MESH_ADV(buf)->delay = 0;
+        fresh_adv_info(buf);
 
-    // return USER_ADV_SEND_DURATION;
-    // }
+        return USER_ADV_SEND_DURATION;
+    }
 
     return 0;
 }
 
 static void mesh_adv_send_end(void *param)
 {
-    struct bt_mesh_adv *adv = param;
-    void *cb_data;
+    struct net_buf *buf = param;
+    const struct bt_mesh_send_cb *cb = BT_MESH_ADV(buf)->cb;
+    void *cb_data = BT_MESH_ADV(buf)->cb_data;
 
     ble_adv_enable(0);
+    /* ble_set_scan_enable(1); */
 
-    LOG_DBG("%s adv %p cb %p end %p ", __func__, adv, adv->ctx.cb, adv->ctx.cb->end);
-
-    if (adv) {
-        if (adv->ctx.cb && adv->ctx.cb->end) {
-            cb_data = adv->ctx.cb_data;
-            adv->ctx.cb->end(0, cb_data);
-        }
-
-        adv->ctx.busy = 0;
-
-        bt_mesh_adv_unref(adv);
+    if (cb && cb->end) {
+        cb->end(0, cb_data);
     }
 
+    BT_MESH_ADV(buf)->busy = 0;
 
-    struct bt_mesh_adv *prev_adv;
-    prev_adv = net_buf_slist_simple_get(&adv_list);
-    LOG_DBG("%s prev_adv %p data %p busy %d ", __func__, prev_adv, prev_adv->ctx.busy);
+    net_buf_unref(buf);
 
-    if (prev_adv && prev_adv->ctx.busy) {
-        bool send_busy = adv_send(prev_adv);
-        LOG_DBG("mesh_adv_send_end %s", send_busy ? "busy" : "succ");
+
+    buf = net_buf_slist_simple_get(&adv_list);
+
+
+    if (buf && BT_MESH_ADV(buf) && BT_MESH_ADV(buf)->busy) {
+        bool send_busy = adv_send(buf);
+        BT_DBG("adv_send %s", send_busy ? "busy" : "succ");
     } else {
+        if (buf) {
+            log_info("unref clear buf");
+            net_buf_unref(buf);
+        }
         resume_mesh_gatt_proxy_adv_thread();
     }
 }
@@ -139,10 +142,10 @@ static void mesh_adv_timer_handler(void *param)
 {
     u16 duration;
 
-    //LOG_DBG("TO - adv_timer_cb 0x%x", param);
+    //BT_DBG("TO - adv_timer_cb 0x%x", param);
 
     if (NULL == param) {
-        LOG_ERR("param is NULL");
+        BT_ERR("param is NULL");
         return;
     }
 
@@ -150,14 +153,14 @@ static void mesh_adv_timer_handler(void *param)
 
     if (duration) {
         sys_timer_change_period(mesh_AdvSend_timer, duration);
-        LOG_INF("start duration= %dms", duration);
+        BT_INFO("start duration= %dms", duration);
     } else {
         sys_timer_remove(mesh_AdvSend_timer);
         mesh_AdvSend_timer = 0;
         mesh_adv_send_end(param);
     }
 
-    //LOG_DBG("adv_t_cb end");
+    //BT_DBG("adv_t_cb end");
 }
 
 static void mesh_adv_timeout_start(u16 delay, u16 duration, void *param)
@@ -166,11 +169,11 @@ static void mesh_adv_timeout_start(u16 delay, u16 duration, void *param)
         /* mesh_AdvSend_timer = sys_timer_register(delay? delay : duration, mesh_adv_timer_handler); */
         /* sys_timer_set_context(mesh_AdvSend_timer, param); */
         mesh_AdvSend_timer = sys_timer_add(param, mesh_adv_timer_handler, delay ? delay : duration);
-        /*LOG_INF("mesh_AdvSend_timer id = %d, %s= %dms",
+        /*BT_INFO("mesh_AdvSend_timer id = %d, %s= %dms",
                 mesh_AdvSend_timer,
                 delay ? "delay first" : "only duration",
                 delay ? delay : duration);
-        LOG_INF("param addr=0x%x", param);*/
+        BT_INFO("param addr=0x%x", param);*/
     }
 
     ASSERT(mesh_adv_timer_handler);
@@ -225,7 +228,7 @@ static void ble_adv_enable(bool en)
 #endif /* CMD_DIRECT_TO_BTCTRLER_TASK_EN */
 }
 
-static void fresh_adv_info(struct bt_mesh_adv *adv)
+static void fresh_adv_info(struct net_buf *buf)
 {
     const u8 direct_addr[6] = {0};
     u16 adv_interval;
@@ -234,73 +237,70 @@ static void fresh_adv_info(struct bt_mesh_adv *adv)
 
 #if 0
     const s32_t adv_int_min = ADV_INT_FAST_MS;
-    adv_interval = max(adv_int_min, BT_MESH_TRANSMIT_INT(BT_MESH_ADV(buf)->ctx.xmit));
+    adv_interval = max(adv_int_min, BT_MESH_TRANSMIT_INT(BT_MESH_ADV(buf)->xmit));
     adv_interval = ADV_SCAN_UNIT(adv_interval);
 #else
     adv_interval = USER_ADV_SEND_INTERVAL;
 #endif
 
-    uint8_t temp_ref;
-    temp_ref = adv->__ref;
-
-    adv_data_head = adv->b.data - BT_MESH_ADV_DATA_HEAD_SIZE;
-    adv_data_head->Len = adv->b.len + 1;
-    adv_data_head->Type = adv_type[adv->ctx.type];
-    total_adv_data_len = adv->b.len + BT_MESH_ADV_DATA_HEAD_SIZE;
+    adv_data_head = buf->data - BT_MESH_ADV_DATA_HEAD_SIZE;
+    adv_data_head->Len = buf->len + 1;
+    adv_data_head->Type = adv_type[BT_MESH_ADV(buf)->type];
+    total_adv_data_len = buf->len + BT_MESH_ADV_DATA_HEAD_SIZE;
 
     /* ble_set_scan_enable(0); */
     ble_adv_enable(0);
     ble_set_adv_param(adv_interval, adv_interval, 0x03, 0, direct_addr, 0x07, 0x00);
     ble_set_adv_data(total_adv_data_len, adv_data_head);
     ble_adv_enable(1);
-
-    adv->__ref = temp_ref;
 }
 
-static bool adv_send(struct bt_mesh_adv *adv)
+static bool adv_send(struct net_buf *buf)
 {
-    //LOG_INF("--func=%s", __FUNCTION__);
-    //LOG_INF("entry_node addr=0x%x", &adv->node);
+    //BT_INFO("--func=%s", __FUNCTION__);
+    //BT_INFO("entry_node addr=0x%x", &buf->entry_node);
+
+    buf->entry_node.next = 0;
 
     OS_ENTER_CRITICAL();
 
-    if (TRUE == mesh_adv_send_timer_busy()) {    // not used now.
-        adv->node.next = 0;
-        net_buf_slist_simple_put(&adv_list, &adv->node);
+    if (TRUE == mesh_adv_send_timer_busy()) {
 
-        LOG_DBG("send timer busy. adv %p ", adv);
+        net_buf_slist_simple_put(&adv_list, &buf->entry_node);
 
         OS_EXIT_CRITICAL();
+
         return 1;
     }
 
 
-    const struct bt_mesh_send_cb *cb = adv->ctx.cb;
-    void *cb_data = adv->ctx.cb_data;
+    const struct bt_mesh_send_cb *cb = BT_MESH_ADV(buf)->cb;
+    void *cb_data = BT_MESH_ADV(buf)->cb_data;
     u16 delay = 0;
     u16 duration;
 
+    /* duration = (MESH_SCAN_WINDOW_MS + */
+    /*             ((BT_MESH_TRANSMIT_COUNT(BT_MESH_ADV(buf)->xmit) + 1) * */
+    /*              (adv_int + 10))); */
     duration = USER_ADV_SEND_DURATION;
-    // duration = (BT_MESH_TRANSMIT_INT(adv->ctx.xmit) +
-    //            ((BT_MESH_TRANSMIT_COUNT(adv->ctx.xmit) + 1) * (BT_MESH_TRANSMIT_INT(adv->ctx.xmit) + 10)));
-
-    LOG_DBG("%s duration %d int %d count %d \r\n", __func__, duration, BT_MESH_TRANSMIT_INT(adv->ctx.xmit),
-            BT_MESH_TRANSMIT_COUNT(adv->ctx.xmit));
-    LOG_DBG("%s adv %p cb %p start %p ", __func__, adv, adv->ctx.cb, adv->ctx.cb->start);
 
     if (cb) {
         if (cb->start) {
             cb->start(duration, 0, cb_data);
         }
+
+        if (cb->user_intercept) {
+            cb->user_intercept(&delay, &duration, cb_data);
+        }
     }
 
     if (0 == delay) {
-        fresh_adv_info(adv);
+        fresh_adv_info(buf);
     } else {
-        // BT_MESH_ADV(buf)->delay = 1; //for compiler, not used now.
+        BT_MESH_ADV(buf)->delay = 1;
     }
 
-    mesh_adv_timeout_start(delay, duration, (void *)adv);
+    mesh_adv_timeout_start(delay, duration, buf);
 
     OS_EXIT_CRITICAL();
 
@@ -315,10 +315,9 @@ void resume_mesh_gatt_proxy_adv_thread(void)
         return;
     }
 
-    //LOG_INF("--func=%s", __FUNCTION__);
+    //BT_INFO("--func=%s", __FUNCTION__);
 
     if (TRUE == mesh_adv_send_timer_busy()) {
-        LOG_ERR(">>>>> %s mesh adv send timer busy", __func__);
         return;
     }
 
@@ -327,9 +326,9 @@ void resume_mesh_gatt_proxy_adv_thread(void)
     //< send period connectable adv ( unprovision adv || proxy adv )
     if (FALSE == bt_mesh_is_provisioned()) {
         unprovision_connectable_adv();
-    } else if (!(is_pb_adv()) && (false == bt_mesh_get_if_app_key_add())) {
+    } else if (false == bt_mesh_get_if_app_key_add()) {
         proxy_fast_connectable_adv();
-    } else if (bt_mesh_is_provisioned()) {
+    } else {
         proxy_connectable_adv();
     }
 
@@ -338,20 +337,11 @@ void resume_mesh_gatt_proxy_adv_thread(void)
     }
 }
 
-void bt_mesh_adv_gatt_update(void)
+void bt_mesh_adv_update(void)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
-    if (bt_mesh_is_provisioned()) {
-        if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY)) {
-            bt_mesh_gatt_proxy_set(BT_MESH_FEATURE_ENABLED);
-            bt_mesh_proxy_adv_start();  //for refresh proxy adv data.
-        }
-    }
-
-    if (!get_if_connecting()) {
-        resume_mesh_gatt_proxy_adv_thread();
-    }
+    resume_mesh_gatt_proxy_adv_thread();
 }
 
 void newbuf_replace(struct net_buf_pool *pool)
@@ -360,7 +350,7 @@ void newbuf_replace(struct net_buf_pool *pool)
 
     buf = net_buf_slist_simple_get(&adv_list);
 
-    BT_MESH_ADV(buf)->ctx.busy = 0;
+    BT_MESH_ADV(buf)->busy = 0;
 
     buf->ref = 0;
 
@@ -369,40 +359,23 @@ void newbuf_replace(struct net_buf_pool *pool)
     pool->free_count++;
 }
 
-void bt_mesh_adv_send(struct bt_mesh_adv *adv, const struct bt_mesh_send_cb *cb,
+void bt_mesh_adv_send(struct net_buf *buf, const struct bt_mesh_send_cb *cb,
                       void *cb_data)
 {
-    //LOG_DBG("--func=%s", __FUNCTION__);
-    /* LOG_DBG("type 0x%02x len %u: %s", adv->ctx.type, buf->len, */
+    //BT_DBG("--func=%s", __FUNCTION__);
+    /* BT_DBG("type 0x%02x len %u: %s", BT_MESH_ADV(buf)->type, buf->len, */
     /* bt_hex(buf->data, buf->len)); */
 
-    adv->ctx.cb = cb;
-    adv->ctx.cb_data = cb_data;
-    adv->ctx.busy = 1U;
+    BT_MESH_ADV(buf)->cb = cb;
+    BT_MESH_ADV(buf)->cb_data = cb_data;
+    BT_MESH_ADV(buf)->busy = 1U;
 
-    bt_mesh_adv_ref(adv);
+    net_buf_ref(buf);
 
-    bool send_busy =  adv_send(adv);
+    bool send_busy =  adv_send(buf);
 
-    if (send_busy) {
-        LOG_WRN("mesh_adv_send busy");
-    } else {
-        LOG_INF("mesh_adv_send succ");
-    }
+    BT_INFO("mesh_adv_send %s", send_busy ? "busy" : "succ");
 }
-
-int bt_mesh_adv_gatt_send(void)
-{
-    if (bt_mesh_is_provisioned()) {
-        if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY)) {
-            bt_mesh_gatt_proxy_set(BT_MESH_FEATURE_ENABLED);
-            bt_mesh_proxy_adv_start();  //for refresh proxy adv data.
-        }
-    }
-    resume_mesh_gatt_proxy_adv_thread();
-    return 0;
-}
-
 
 void bt_mesh_adv_init(void)
 {

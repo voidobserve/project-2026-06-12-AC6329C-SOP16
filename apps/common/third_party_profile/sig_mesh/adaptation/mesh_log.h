@@ -52,17 +52,17 @@
 
 //< debug remap
 #if MESH_CODE_LOG_DEBUG_EN
-#define LOG_INF             log_info
-#define LOG_HEXDUMP_INF     log_info_hexdump
-#define LOG_DBG             log_debug
-#define LOG_WRN             log_warn
-#define LOG_ERR             log_error
+#define BT_INFO             log_info
+#define BT_INFO_HEXDUMP     log_info_hexdump
+#define BT_DBG              log_debug
+#define BT_WARN             log_warn
+#define BT_ERR              log_error
 #else
-#define LOG_INF
-#define LOG_HEXDUMP_INF
-#define LOG_DBG
-#define LOG_WRN
-#define LOG_ERR             log_error
+#define BT_INFO
+#define BT_INFO_HEXDUMP
+#define BT_DBG
+#define BT_WARN
+#define BT_ERR              log_error
 #endif /* MESH_CODE_LOG_DEBUG_EN */
 
 #endif /* __MESH_LOG_H__ */

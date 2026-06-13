@@ -18,6 +18,41 @@ https://gitee.com/Jieli-Tech/fw-AC63_BT_SDK/tree/master/sdk_tools/BLE%20Profile%
 profile cfg 文件参考工具包里面目录trans_data_cfg
  */
 static const uint8_t multi_profile_data[] = {
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  中道iLamp APP通信协议  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    //////////////////////////////////////////////////////
+    //
+    // 0x0001 PRIMARY_SERVICE  1800
+    //
+    //////////////////////////////////////////////////////
+    0x0a, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x28, 0x00, 0x18,
+
+     /* CHARACTERISTIC,  2a00, READ | WRITE | DYNAMIC, */
+    // 0x0002 CHARACTERISTIC 2a00 READ | WRITE | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x0a, 0x03, 0x00, 0x00, 0x2a,
+    // 0x0003 VALUE 2a00 READ | WRITE | DYNAMIC
+    0x08, 0x00, 0x0a, 0x01, 0x03, 0x00, 0x00, 0x2a,
+
+    //////////////////////////////////////////////////////
+    //
+    // 0x0004 PRIMARY_SERVICE  fff0
+    //
+    //////////////////////////////////////////////////////
+    0x0a, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00, 0x28, 0xf0, 0xff,
+
+     /* CHARACTERISTIC,  fff1, READ | WRITE | NOTIFY| DYNAMIC, */
+    // 0x0005 CHARACTERISTIC fff1 READ | WRITE | NOTIFY| DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x05, 0x00, 0x03, 0x28, 0x1a, 0x06, 0x00, 0xf1, 0xff,
+    // 0x0006 VALUE fff1 READ | WRITE | NOTIFY| DYNAMIC
+    0x08, 0x00, 0x1a, 0x01, 0x06, 0x00, 0xf1, 0xff,
+    // 0x0007 CLIENT_CHARACTERISTIC_CONFIGURATION
+    0x0a, 0x00, 0x0a, 0x01, 0x07, 0x00, 0x02, 0x29, 0x00, 0x00,
+
+
+
+
+    #if 0
     //////////////////////////////////////////////////////
     //
     // 0x0001 PRIMARY_SERVICE  1800
@@ -80,7 +115,7 @@ static const uint8_t multi_profile_data[] = {
     // 0x0013 VALUE ae10 READ | WRITE | DYNAMIC
     0x08, 0x00, 0x0a, 0x01, 0x13, 0x00, 0x10, 0xae,
 
-
+#endif 
 #if 0
     //for uuid128,sample
     //	PRIMARY_SERVICE, 0000F530-1212-EFDE-1523-785FEABCD123
@@ -123,6 +158,8 @@ static const uint8_t multi_profile_data[] = {
     15, 0x00,   0x02, 0x04,    0x1C, 0x00,     0x50, 0x2A,     0x02, 0x8A, 0x24, 0x66, 0x82, 0x34, 0x36,       //PnP ID
 #endif
 
+
+#if 0
     //////////////////////////////////////////////////////
     //
     // 0x0040 PRIMARY_SERVICE  ae3a
@@ -159,6 +196,9 @@ static const uint8_t multi_profile_data[] = {
     // 0x0049 CLIENT_CHARACTERISTIC_CONFIGURATION
     0x0a, 0x00, 0x0a, 0x01, 0x49, 0x00, 0x02, 0x29, 0x00, 0x00,
 
+#endif 
+
+
 #if RCSP_BTMATE_EN
     //////////////////////////////////////////////////////
     //
@@ -194,7 +234,8 @@ static const uint8_t multi_profile_data[] = {
 #endif
 
 #define ATT_CHARACTERISTIC_2a00_01_VALUE_HANDLE 0x0003
-#define ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE 0x0006
+// #define ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE 0x0006
+#define ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE 0x000A  //随便写的
 #define ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE 0x0008
 #define ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE 0x0009
 #define ATT_CHARACTERISTIC_ae03_01_VALUE_HANDLE 0x000b
@@ -209,6 +250,15 @@ static const uint8_t multi_profile_data[] = {
 #define ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE 0x0045
 #define ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE 0x0048
 #define ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE 0x0049
+
+
+//从机蓝牙服务----
+#define ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE 0x0006
+#define ATT_CHARACTERISTIC_fff1_01_CLIENT_CONFIGURATION_HANDLE 0x0007
+
+
+
+
 
 #endif
 

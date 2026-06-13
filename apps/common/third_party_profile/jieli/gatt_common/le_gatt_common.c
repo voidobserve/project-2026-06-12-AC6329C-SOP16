@@ -62,7 +62,6 @@ static u16 gatt_client_conn_handle[SUPPORT_MAX_GATT_CLIENT];
 static u8 gatt_server_conn_handle_state[SUPPORT_MAX_GATT_SERVER];//BLE_ST_CONNECT,BLE_ST_SEND_DISCONN,BLE_ST_NOTIFY_IDICATE
 static u8 gatt_client_conn_handle_state[SUPPORT_MAX_GATT_CLIENT];//BLE_ST_CONNECT,BLE_ST_SEND_DISCONN,BLE_ST_SEARCH_COMPLETE
 
-extern const int config_btctler_coded_type;
 //----------------------------------------------------------------------------------------
 u32 att_need_ctrl_ramsize(void);
 void ble_comm_server_profile_init(void);
@@ -789,18 +788,6 @@ void ble_profile_init(void)
         }
     }
 
-    if (config_btctler_le_features & LE_CODED_PHY) {
-        //配置CODED类型
-        if (config_btctler_coded_type == CONN_SET_PHY_OPTIONS_S2) {
-            log_info("set coded is s2");
-            ll_vendor_set_code_type(CONN_SET_PHY_OPTIONS_S2);
-        } else if (config_btctler_coded_type == CONN_SET_PHY_OPTIONS_S8) {
-            log_info("set coded is s8");
-            ll_vendor_set_code_type(CONN_SET_PHY_OPTIONS_S8);
-        }
-    }
-
-
     if (STACK_IS_SUPPORT_GATT_SERVER()) {
         att_server_register_packet_handler(__ble_comm_cbk_packet_handler);
         ble_gatt_server_profile_init();
@@ -1035,7 +1022,6 @@ void ble_comm_set_config_name(const char *name_p, u8 add_ext_name)
 
     }
     ble_device_name[ble_device_name_len] = 0;//结束符
-
     log_info("ble name(%d): %s \n", ble_device_name_len, ble_device_name);
 }
 

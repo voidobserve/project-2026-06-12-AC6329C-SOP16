@@ -18,10 +18,10 @@
 #define LOG_DUMP_ENABLE
 #include "mesh_log.h"
 
-#define NET_BUF_DBG             LOG_DBG
-#define NET_BUF_ERR             LOG_ERR
-#define NET_BUF_WARN            LOG_WRN
-#define NET_BUF_INFO            LOG_INF
+#define NET_BUF_DBG             BT_DBG
+#define NET_BUF_ERR             BT_ERR
+#define NET_BUF_WARN            BT_WARN
+#define NET_BUF_INFO            BT_INFO
 #define NET_BUF_ASSERT          ASSERT
 
 #if MESH_RAM_AND_CODE_MAP_DETAIL
@@ -458,18 +458,6 @@ u16_t net_buf_simple_pull_be16(struct net_buf_simple *buf)
     return sys_be16_to_cpu(val);
 }
 
-uint32_t net_buf_simple_pull_le24(struct net_buf_simple *buf)
-{
-    struct uint24 {
-        uint32_t u24: 24;
-    } __packed val;
-
-    val = UNALIGNED_GET((struct uint24 *)buf->data);
-    net_buf_simple_pull(buf, sizeof(val));
-
-    return sys_le24_to_cpu(val.u24);
-}
-
 u32_t net_buf_simple_pull_le32(struct net_buf_simple *buf)
 {
     u32_t val;
@@ -488,23 +476,6 @@ u32_t net_buf_simple_pull_be32(struct net_buf_simple *buf)
     net_buf_simple_pull(buf, sizeof(val));
 
     return sys_be32_to_cpu(val);
-}
-
-void net_buf_simple_add_le64(struct net_buf_simple *buf, uint64_t val)
-{
-    NET_BUF_SIMPLE_DBG("buf %p val %" PRIu64, buf, val);
-
-    sys_put_le64(val, net_buf_simple_add(buf, sizeof(val)));
-}
-
-uint64_t net_buf_simple_pull_le64(struct net_buf_simple *buf)
-{
-    uint64_t val;
-
-    val = UNALIGNED_GET((uint64_t *)buf->data);
-    net_buf_simple_pull(buf, sizeof(val));
-
-    return sys_le64_to_cpu(val);
 }
 
 size_t net_buf_simple_headroom(struct net_buf_simple *buf)
@@ -569,16 +540,19 @@ void net_buf_slist_simple_put(sys_slist_t *head_list, sys_snode_t *dst_node)
 #define GET_STRUCT_MEMBER_OFFSET(type, member) \
     (u32)&(((struct type*)0)->member)
 
-struct bt_mesh_adv *net_buf_slist_simple_get(sys_slist_t *list)
+struct net_buf *net_buf_slist_simple_get(sys_slist_t *list)
 {
     u8 *buf;
     unsigned int key;
 
     key = irq_lock();
     buf = (void *)sys_slist_get(list);
+    if (buf) {
+        buf -= GET_STRUCT_MEMBER_OFFSET(net_buf, entry_node);
+    }
     irq_unlock(key);
 
-    return (struct bt_mesh_adv *)buf;
+    return (struct net_buf *)buf;
 }
 
 struct net_buf *net_buf_slist_get(sys_slist_t *list)
@@ -621,43 +595,3 @@ struct net_buf *net_buf_slist_get(sys_slist_t *list)
 
     return buf;
 }
-
-// mesh v1.1 update
-void net_buf_simple_push_le24(struct net_buf_simple *buf, uint32_t val)
-{
-    // NET_BUF_DBG("buf %p val %u", buf, val);
-
-    sys_put_le24(val, net_buf_simple_push(buf, 3));
-}
-
-void net_buf_simple_push_be24(struct net_buf_simple *buf, uint32_t val)
-{
-    // NET_BUF_DBG("buf %p val %u", buf, val);
-
-    sys_put_be24(val, net_buf_simple_push(buf, 3));
-}
-
-void net_buf_simple_add_le24(struct net_buf_simple *buf, uint32_t val)
-{
-    // NET_BUF_DBG("buf %p val %u", buf, val);
-
-    sys_put_le24(val, net_buf_simple_add(buf, 3));
-}
-
-void net_buf_simple_add_be24(struct net_buf_simple *buf, uint32_t val)
-{
-    // NET_BUF_DBG("buf %p val %u", buf, val);
-
-    sys_put_be24(val, net_buf_simple_add(buf, 3));
-}
-
-void net_buf_simple_init_with_data(struct net_buf_simple *buf,
-                                   void *data, size_t size)
-{
-    buf->__buf = data;
-    buf->data  = data;
-    buf->size  = size;
-    buf->len   = size;
-}
-
-/* End */

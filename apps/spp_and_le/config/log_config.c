@@ -241,10 +241,5 @@ const char log_tag_const_d_FINDMY AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_FINDMY AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_FINDMY AT(.LOG_TAG_CONST) = 1;
 
-const char log_tag_const_v_FTMS AT(.LOG_TAG_CONST) = 0;
-const char log_tag_const_i_FTMS AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_d_FTMS AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_w_FTMS AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_e_FTMS AT(.LOG_TAG_CONST) = 1;
 
 

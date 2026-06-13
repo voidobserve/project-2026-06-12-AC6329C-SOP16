@@ -336,7 +336,7 @@ tuya_ble_status_t tuya_ble_ota_response(tuya_ble_ota_response_t *p_data);
  * @note
  *.
  * */
-uint8_t tuya_ble_custom_event_send(tuya_ble_custom_evt_t *evt);
+uint8_t tuya_ble_custom_event_send(tuya_ble_custom_evt_t evt);
 
 
 

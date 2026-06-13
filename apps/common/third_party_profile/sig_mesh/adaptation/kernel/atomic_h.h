@@ -18,7 +18,7 @@ extern "C" {
 #undef atomic_inc(v)
 #undef atomic_dec(v)
 
-typedef long atomic_tt;
+typedef int atomic_tt;
 typedef atomic_tt atomic_val_t;
 
 /**

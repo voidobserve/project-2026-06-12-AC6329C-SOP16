@@ -142,6 +142,7 @@ static void conn_24g_set_soft_poweroff(void)
     sys_timeout_add(NULL, power_set_soft_poweroff, WAIT_DISCONN_TIME_MS);
 }
 
+extern const int config_btctler_coded_type;
 static void conn_24g_app_start()
 {
     log_info("=======================================");
@@ -152,6 +153,14 @@ static void conn_24g_app_start()
 
     clk_set("sys", BT_NORMAL_HZ);
 
+    //配置CODED类型
+    if (config_btctler_coded_type == CONN_SET_PHY_OPTIONS_S2) {
+        log_info("set coded is s2");
+        ll_vendor_set_code_type(CONN_SET_PHY_OPTIONS_S2);
+    } else if (config_btctler_coded_type == CONN_SET_PHY_OPTIONS_S8) {
+        log_info("set coded is s8");
+        ll_vendor_set_code_type(CONN_SET_PHY_OPTIONS_S8);
+    }
 //有BLE
 #if (TCFG_USER_BLE_ENABLE)
     u32 sys_clk =  clk_get("sys");

@@ -2,7 +2,7 @@
 #include "board_config.h"
 #include "user_cfg_id.h"
 
-#if 0//TCFG_USE_VIRTUAL_RTC //just support AC695/AC635
+#if TCFG_USE_VIRTUAL_RTC //just support AC695/AC635
 
 struct sys_time write_alarm_test;
 struct sys_time write_sys_time_test;

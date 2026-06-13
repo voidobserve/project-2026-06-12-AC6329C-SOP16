@@ -128,7 +128,7 @@ u8 dg_central_get_match_id(u16 conn_handle);
 u8 dg_central_get_ota_is_support(u16 conn_handle);
 static int dg_pair_vm_do(struct ctl_pair_info_t *info, u8 rw_flag);
 static void dg_scan_conn_config_set(struct ctl_pair_info_t *pair_info);
-extern void check_is_reconn_succ(u8 state);
+extern void check_is_reconn_succ(u8 state, u16 con_handle);
 extern int dongle_ble_hid_input_handler(u8 *packet, u16 size);
 extern int dongle_second_ble_hid_input_handler(u8 *packet, u16 size);
 //------------------------------------------------------
@@ -834,7 +834,7 @@ static int dg_central_event_packet_handler(int event, u8 *packet, u16 size, u8 *
         }
 
 #if RCSP_BTMATE_EN
-        check_is_reconn_succ(1);//返回重连接成功,未放到encry处,避免不走加密情况
+        check_is_reconn_succ(1, cur_conn_info.conn_handle);//返回重连接成功,未放到encry处,避免不走加密情况
 #endif
         break;
 

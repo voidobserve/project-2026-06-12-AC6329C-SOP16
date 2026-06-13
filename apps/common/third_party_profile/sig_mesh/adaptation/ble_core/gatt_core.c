@@ -8,23 +8,18 @@
 
 #include "adaptation.h"
 #include "proxy.h"
-#include "proxy_msg.h"
 #include "prov.h"
 #include "ble/hci_ll.h"
 #include "btstack/bluetooth.h"
 #include "ble_user.h"
 #include "app_config.h"
-#include "model_api.h"
-#if CONFIG_BT_MESH_DFU_DIST
-#include "mesh_dfu_app_cmd_protocol.h"
-#endif
 
 #define LOG_TAG             "[MESH-gatt_core]"
-//#define LOG_INFO_ENABLE
-//#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
-//#define LOG_DUMP_ENABLE
+#define LOG_DUMP_ENABLE
 #include "mesh_log.h"
 
 static u8 ble_work_state = 0;      //ble 状态变化
@@ -59,7 +54,7 @@ u16 bt_gatt_get_mtu(struct bt_conn *conn)
     return 0;
 }
 
-int bt_conn_disconnect(struct bt_conn *conn, u8 reason) {}
+void bt_conn_disconnect(struct bt_conn *conn, u8 reason) {}
 
 void proxy_gatt_init(void) {}
 
@@ -94,7 +89,22 @@ void proxy_gatt_init(void) {}
 		sizeof((u8_t []) { _bytes }))
 
 #define NODE_ID_LEN  19
-#define NET_ID_LEN   11
+
+#define BT_DATA_FLAGS                   0x01 /* AD flags */
+#define BT_DATA_UUID16_ALL              0x03 /* 16-bit UUID, all listed */
+#define BT_DATA_SVC_DATA16              0x16 /* Service data, 16-bit UUID */
+#define BT_LE_AD_GENERAL                0x02 /* General Discoverable */
+#define BT_LE_AD_NO_BREDR               0x04 /* BR/EDR not supported */
+
+/** Description of different data types that can be encoded into
+  * advertising data. Used to form arrays that are passed to the
+  * bt_le_adv_start() function.
+  */
+struct bt_data {
+    u8_t type;
+    u8_t data_len;
+    const u8_t *data;
+};
 
 static u8_t proxy_svc_data[NODE_ID_LEN] = { 0x28, 0x18, };
 
@@ -104,20 +114,14 @@ static const struct bt_data node_id_ad[] = {
     BT_DATA(BT_DATA_SVC_DATA16, proxy_svc_data, NODE_ID_LEN),
 };
 
-static const struct bt_data net_id_ad[] = {
-    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0x28, 0x18),
-    BT_DATA(BT_DATA_SVC_DATA16, proxy_svc_data, NET_ID_LEN),
-};
-
 #define UUID_16BIT_2_LSB_8BIT(x)            x & 0xff, x >> 8
 
-#define UUID_MESH_PROVISIONING_SERVICE  UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV_VAL)
-#define UUID_MESH_PROVISIONING_DATA_IN  UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV_DATA_IN_VAL)
-#define UUID_MESH_PROVISIONING_DATA_OUT UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV_DATA_OUT_VAL)
-#define UUID_MESH_PROXY_SERVICE  		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY_VAL)
-#define UUID_MESH_PROXY_DATA_IN  		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY_DATA_IN_VAL)
-#define UUID_MESH_PROXY_DATA_OUT 		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY_DATA_OUT_VAL)
+#define UUID_MESH_PROVISIONING_SERVICE  UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV)
+#define UUID_MESH_PROVISIONING_DATA_IN  UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV_DATA_IN)
+#define UUID_MESH_PROVISIONING_DATA_OUT UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROV_DATA_OUT)
+#define UUID_MESH_PROXY_SERVICE  		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY)
+#define UUID_MESH_PROXY_DATA_IN  		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY_DATA_IN)
+#define UUID_MESH_PROXY_DATA_OUT 		UUID_16BIT_2_LSB_8BIT(BT_UUID_MESH_PROXY_DATA_OUT)
 
 #define MESH_DATA_IN_HANDLE             10
 #define MESH_DATA_OUT_HANDLE            12
@@ -201,31 +205,6 @@ static const u8 Provisioning_Service(profile_data)[] = {
     // 0x0085 CLIENT_CHARACTERISTIC_CONFIGURATION
     0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
 #endif
-
-#if CONFIG_BT_MESH_DFU_DIST
-    // mesh dfu distributor--flash write service
-    //////////////////////////////////////////////////////
-    //
-    // 0x000e PRIMARY_SERVICE  BD00
-    //
-    //////////////////////////////////////////////////////
-    0x0a, 0x00, 0x02, 0x00, 0x0e, 0x00, 0x00, 0x28, 0x00, 0xbd,
-
-    /* CHARACTERISTIC,  BD01, WRITE_WITHOUT_RESPONSE | DYNAMIC, */
-    // 0x000f CHARACTERISTIC BD01 WRITE_WITHOUT_RESPONSE | DYNAMIC
-    0x0d, 0x00, 0x02, 0x00, 0x0f, 0x00, 0x03, 0x28, 0x04, 0x10, 0x00, 0x01, 0xbd,
-    // 0x0010 VALUE BD01 WRITE_WITHOUT_RESPONSE | DYNAMIC
-    0x08, 0x00, 0x04, 0x01, ATT_CHARACTERISTIC_bd00_bd01_VALUE_HANDLE, 0x00, 0x01, 0xbd,
-
-    /* CHARACTERISTIC,  BD02, NOTIFY, */
-    // 0x0011 CHARACTERISTIC BD02 NOTIFY
-    0x0d, 0x00, 0x02, 0x00, 0x11, 0x00, 0x03, 0x28, 0x10, 0x12, 0x00, 0x02, 0xbd,
-    // 0x0012 VALUE BD02 NOTIFY
-    0x08, 0x00, 0x10, 0x00, ATT_CHARACTERISTIC_bd00_bd02_VALUE_HANDLE, 0x00, 0x02, 0xbd,
-    // 0x0013 CLIENT_CHARACTERISTIC_CONFIGURATION
-    0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_bd00_bd02_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
-#endif
-
     // END
     0x00, 0x00,
 };
@@ -289,30 +268,6 @@ static const uint8_t Proxy_Service(profile_data)[] = {
     // 0x0085 CLIENT_CHARACTERISTIC_CONFIGURATION
     0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
 #endif
-
-#if CONFIG_BT_MESH_DFU_DIST
-    // mesh dfu distributor--flash write service
-    //////////////////////////////////////////////////////
-    //
-    // 0x000e PRIMARY_SERVICE  BD00
-    //
-    //////////////////////////////////////////////////////
-    0x0a, 0x00, 0x02, 0x00, 0x0e, 0x00, 0x00, 0x28, 0x00, 0xbd,
-
-    /* CHARACTERISTIC,  BD01, WRITE_WITHOUT_RESPONSE | DYNAMIC, */
-    // 0x000f CHARACTERISTIC BD01 WRITE_WITHOUT_RESPONSE | DYNAMIC
-    0x0d, 0x00, 0x02, 0x00, 0x0f, 0x00, 0x03, 0x28, 0x04, 0x10, 0x00, 0x01, 0xbd,
-    // 0x0010 VALUE BD01 WRITE_WITHOUT_RESPONSE | DYNAMIC
-    0x08, 0x00, 0x04, 0x01, ATT_CHARACTERISTIC_bd00_bd01_VALUE_HANDLE, 0x00, 0x01, 0xbd,
-
-    /* CHARACTERISTIC,  BD02, NOTIFY, */
-    // 0x0011 CHARACTERISTIC BD02 NOTIFY
-    0x0d, 0x00, 0x02, 0x00, 0x11, 0x00, 0x03, 0x28, 0x10, 0x12, 0x00, 0x02, 0xbd,
-    // 0x0012 VALUE BD02 NOTIFY
-    0x08, 0x00, 0x10, 0x00, ATT_CHARACTERISTIC_bd00_bd02_VALUE_HANDLE, 0x00, 0x02, 0xbd,
-    // 0x0013 CLIENT_CHARACTERISTIC_CONFIGURATION
-    0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_bd00_bd02_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
-#endif
     // END
     0x00, 0x00,
 };
@@ -357,7 +312,7 @@ static void get_prov_properties_capabilities(u8 *adv_data)
     prov = bt_mesh_prov_get();
 
     if (prov == NULL) {
-        LOG_ERR("get prov is NULL");
+        BT_ERR("get prov is NULL");
         return;
     }
 
@@ -390,17 +345,10 @@ static void Provisioning_Service(change_adv_info)(void)
 
     get_mesh_adv_name(&rsp_len, &rsp_data);
 
-#if CONFIG_BT_MESH_DFU_DIST
-    LOG_INF(">>> before rsp_len: %d\r\n", rsp_len);
-    get_mesh_dfu_adv_filter(&rsp_len, &rsp_data);
-    LOG_INF(">>> mesh dfu adv filter len: %d", rsp_len);
-    LOG_HEXDUMP_INF(rsp_data, rsp_len);
-#endif
-
     ble_set_scan_rsp_data(rsp_len, rsp_data);
 }
 
-static void Proxy_Service(node_id_adv)(u16 interval_ms)
+static void Proxy_Service(change_adv_info)(u16 interval_ms)
 {
     if (TRUE == mesh_adv_send_timer_busy()) {
         return;
@@ -422,51 +370,12 @@ static void Proxy_Service(node_id_adv)(u16 interval_ms)
         data_len += node_id_ad[i].data_len;
     }
 
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
     memset(null_addr, 0, 6);
-    LOG_HEXDUMP_INF(proxy_svc_data, NODE_ID_LEN);
+    BT_INFO_HEXDUMP(proxy_svc_data, NODE_ID_LEN);
     ble_set_adv_param(adv_int, adv_int, adv_type, 0, null_addr, 0x07, 0x00);
     ble_set_adv_data(data_len, (uint8_t *)adv_data);
     get_mesh_adv_name(&rsp_len, &rsp_data);
-    ble_set_scan_rsp_data(rsp_len, rsp_data);
-}
-
-static void Proxy_Service(net_id_adv)(u16 interval_ms)
-{
-    if (TRUE == mesh_adv_send_timer_busy()) {
-        return;
-    }
-
-    // setup proxy connectable advertisements
-    u16 adv_int = interval_ms;
-    u8 adv_type = 0;
-    u8 null_addr[6];
-    u8 data_len = 0;
-    static u8 adv_data[31];
-    u8 rsp_len;
-    u8 *rsp_data;
-
-    for (u8 i = 0; i < ARRAY_SIZE(net_id_ad); i++) {
-        adv_data[data_len++] = net_id_ad[i].data_len + 1;
-        adv_data[data_len++] = net_id_ad[i].type;
-        memcpy(adv_data + data_len, net_id_ad[i].data, net_id_ad[i].data_len);
-        data_len += net_id_ad[i].data_len;
-    }
-
-    LOG_INF("--func=%s", __FUNCTION__);
-    memset(null_addr, 0, 6);
-    LOG_HEXDUMP_INF(proxy_svc_data, NET_ID_LEN);
-    ble_set_adv_param(adv_int, adv_int, adv_type, 0, null_addr, 0x07, 0x00);
-    ble_set_adv_data(data_len, (uint8_t *)adv_data);
-    get_mesh_adv_name(&rsp_len, &rsp_data);
-
-#if CONFIG_BT_MESH_DFU_DIST
-    LOG_INF(">>> before rsp_len: %d\r\n", rsp_len);
-    get_mesh_dfu_adv_filter(&rsp_len, &rsp_data);
-    LOG_INF(">>> mesh dfu adv filter len: %d", rsp_len);
-    LOG_HEXDUMP_INF(rsp_data, rsp_len);
-#endif
-
     ble_set_scan_rsp_data(rsp_len, rsp_data);
 }
 
@@ -526,8 +435,8 @@ static ble_state_e get_ble_work_state(void)
 
 static u16 gatt_read_callback(u16 conn_handle, u16 att_handle, u16 offset, u8 *buf, u16 buf_len)
 {
-    LOG_INF("read att_handle %04x", att_handle);
-    LOG_HEXDUMP_INF(buf, buf_len);
+    BT_INFO("read att_handle %04x", att_handle);
+    BT_INFO_HEXDUMP(buf, buf_len);
 
     uint16_t  att_value_len = 0;
     uint16_t handle = att_handle;
@@ -565,12 +474,12 @@ static u16 gatt_read_callback(u16 conn_handle, u16 att_handle, u16 offset, u8 *b
 
 static int gatt_write_callback(u16 conn_handle, u16 att_handle, u16 mode, u16 offset, u8 *buf, u16 buf_len)
 {
-    LOG_INF("write att_handle 0x%04x, mode %u", att_handle, mode);
-    LOG_HEXDUMP_INF(buf, buf_len);
+    printf("write att_handle 0x%04x, mode %u", att_handle, mode);
+    BT_INFO_HEXDUMP(buf, buf_len);
 
     if (FALSE == bt_mesh_is_provisioned()) {
         if (MESH_PROV_CONFIG_HANDLE == att_handle) {
-            LOG_INF("MESH_PROV_CONFIG_HANDLE");
+            BT_INFO("MESH_PROV_CONFIG_HANDLE");
             prov_ccc_write(&conn,
                            buf, buf_len,
                            offset, 0);
@@ -580,19 +489,21 @@ static int gatt_write_callback(u16 conn_handle, u16 att_handle, u16 mode, u16 of
 
     switch (att_handle) {
     case MESH_PROXY_CONFIG_HANDLE:
-        LOG_INF("MESH_PROXY_CONFIG_HANDLE");
+        BT_INFO("MESH_PROXY_CONFIG_HANDLE");
         proxy_ccc_write(&conn,
                         buf, buf_len,
                         offset, 0);
         break;
     case MESH_DATA_IN_HANDLE:
-        LOG_INF("MESH_DATA_IN_HANDLE");
-        bt_mesh_proxy_msg_recv(&conn, buf, buf_len);
+        BT_INFO("MESH_DATA_IN_HANDLE");
+        proxy_recv(&conn,
+                   buf,
+                   buf_len, offset, 0);
         break;
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
-        LOG_INF("rcsp_read:%x\n", buf_len);
+        printf("rcsp_read:%x\n", buf_len);
         if (app_recieve_callback) {
             app_recieve_callback((void *)NULL, buf, buf_len);
         }
@@ -603,42 +514,30 @@ static int gatt_write_callback(u16 conn_handle, u16 att_handle, u16 mode, u16 of
         /* check_connetion_updata_deal(); */
         log_info("\n------write ccc:%04x, %02x\n", att_handle, buf[0]);
         att_set_ccc_config(att_handle, buf[0]);
-        //rcsp_dev_select(RCSP_BLE);
-        rcsp_init();
         mesh_can_send_now_wakeup();
-        break;
-
-#endif
-
-#if CONFIG_BT_MESH_DFU_DIST
-    case ATT_CHARACTERISTIC_bd00_bd01_VALUE_HANDLE:
-        //printf("dfu_distributor_recv len is :%d\n", buf_len);
-        //printf_buf(buf, buf_len);
-        parse_packet(buf, buf_len);
         break;
 #endif
     }
-
 
     return 0;
 }
 
 void bt_gatt_service_register(u32 uuid)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     //< setup GATT callback
     mesh_gatt_set_callback(gatt_read_callback, gatt_write_callback);
 
     switch (uuid) {
-    case BT_UUID_MESH_PROV_VAL:
-        LOG_INF("BT_UUID_MESH_PROV");
+    case BT_UUID_MESH_PROV:
+        BT_INFO("BT_UUID_MESH_PROV");
         mesh_gatt_change_profile(Provisioning_Service(profile_data));
         Provisioning_Service(change_adv_info)();
         gatt_server_flag = 0;
         break;
-    case BT_UUID_MESH_PROXY_VAL:
-        LOG_INF("BT_UUID_MESH_PROXY");
+    case BT_UUID_MESH_PROXY:
+        BT_INFO("BT_UUID_MESH_PROXY");
         mesh_gatt_change_profile(Proxy_Service(profile_data));
         gatt_server_flag = 1;
         break;
@@ -649,23 +548,21 @@ void bt_gatt_service_register(u32 uuid)
 
 void bt_gatt_service_unregister(u32 uuid)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     mesh_gatt_set_callback(NULL, NULL);
 }
 
 int bt_gatt_notify(struct bt_conn *conn, const void *data, u16_t len)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     return mesh_gatt_notify(conn->handle, MESH_DATA_OUT_HANDLE, data, len);
 }
 
 u16 bt_gatt_get_mtu(struct bt_conn *conn)
 {
-    u16 conn_mtu_default = 23;
-    // fix: conn->mtu is not initialized
-    return conn->mtu ? conn->mtu : conn_mtu_default;
+    return conn->mtu;
 }
 
 static u8 ble_disconnect(u16 handle)
@@ -679,45 +576,38 @@ static u8 ble_disconnect(u16 handle)
     return 0;
 }
 
-int bt_conn_disconnect(struct bt_conn *conn, u8 reason)
+void bt_conn_disconnect(struct bt_conn *conn, u8 reason)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
-    LOG_INF("conn->handle=0x%x", conn->handle);
+    BT_INFO("--func=%s", __FUNCTION__);
+    BT_INFO("conn->handle=0x%x", conn->handle);
 
-    return ble_disconnect(conn->handle);
+    ble_disconnect(conn->handle);
 }
 
 void unprovision_connectable_adv(void)
 {
-    LOG_INF(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
+    BT_INFO(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
     Provisioning_Service(change_adv_info)();
 }
 
 void proxy_connectable_adv(void)
 {
-    LOG_INF(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
-    Proxy_Service(net_id_adv)(config_bt_mesh_proxy_node_adv_interval);
+    BT_INFO(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
+    Proxy_Service(change_adv_info)(config_bt_mesh_proxy_node_adv_interval);
 }
 
 void proxy_fast_connectable_adv(void)
 {
-    LOG_INF(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
-    Proxy_Service(node_id_adv)(config_bt_mesh_proxy_pre_node_adv_interval);
+    BT_INFO(RedBoldBlink "--func=%s" Reset, __FUNCTION__);
+    Proxy_Service(change_adv_info)(config_bt_mesh_proxy_pre_node_adv_interval);
 }
 
 void proxy_gatt_init(void)
 {
-    LOG_INF("--func=%s", __FUNCTION__);
+    BT_INFO("--func=%s", __FUNCTION__);
 
     mesh_gatt_init(mesh_gatt_buf, sizeof(mesh_gatt_buf));
 }
-
-// mesh v1.1 update
-uint8_t bt_conn_index(const struct bt_conn *conn)
-{
-    return conn->index;
-}
-/* mesh v1.1 update End */
 
 #if RCSP_BTMATE_EN
 extern void ble_app_disconnect(void);

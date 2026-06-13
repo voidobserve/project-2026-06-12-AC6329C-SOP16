@@ -60,12 +60,6 @@ void wifi_det_close()
 {
     printf("tmp weak func wifi_det_close\n");
 }
-
-__attribute__((weak))
-void breakpoint_uninit(void)
-{
-    printf("tmp weak func breakpoint_uninit\n");
-}
 extern void *dev_update_get_parm(int type);
 extern u8 get_ota_status();
 extern int get_nor_update_param(void *buf);
@@ -306,7 +300,10 @@ static void update_before_jump_common_handle(UPDATA_TYPE up_type)
 #endif
 
     hwi_all_close();
+#if defined(CONFIG_CPU_BD29)
+    void breakpoint_uninit(void);
     breakpoint_uninit();
+#endif
 
 #ifdef CONFIG_SUPPORT_WIFI_DETECT
     wifi_det_close();

@@ -148,10 +148,10 @@ const int config_delete_link_key          = 1;           //配置是否连接失
 
 #if (CONFIG_BLE_PHY_SET == CONFIG_SET_1M_PHY)
 #define SET_SELECT_PHY_CFG   0
-const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_NONE;
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
 #elif (CONFIG_BLE_PHY_SET == CONFIG_SET_2M_PHY)
 #define SET_SELECT_PHY_CFG   LE_2M_PHY
-const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_NONE;
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
 #elif (CONFIG_BLE_PHY_SET == CONFIG_SET_CODED_S2_PHY)
 #define SET_SELECT_PHY_CFG   LE_CODED_PHY
 const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
@@ -188,19 +188,22 @@ const int config_btctler_le_afh_en = 1;
 const int config_btctler_le_afh_en = 0;
 #endif
 
-// multi-link config, 带主从多机只开slave_multilink就可以
-#if (CONFIG_BT_GATT_SERVER_NUM > 1)
-const int config_btctler_le_slave_multilink = 1;
-const int config_btctler_le_master_multilink = 0;
-#elif (CONFIG_BT_GATT_SERVER_NUM && CONFIG_BT_GATT_CLIENT_NUM)
-const int config_btctler_le_slave_multilink = 1;
-const int config_btctler_le_master_multilink = 0;
-#elif (CONFIG_BT_GATT_CLIENT_NUM > 1)
-const int config_btctler_le_slave_multilink = 0;
+//master  multi-link
+#if (CONFIG_BT_GATT_CLIENT_NUM > 1)
 const int config_btctler_le_master_multilink = 1;
 #else
-const int config_btctler_le_slave_multilink = 0;
+#if ((CONFIG_BT_GATT_SERVER_NUM == 1) && (CONFIG_BT_GATT_CLIENT_NUM == 1))
+const int config_btctler_le_master_multilink = 1;
+#else
 const int config_btctler_le_master_multilink = 0;
+#endif
+#endif
+
+// Slave multi-link
+#if (CONFIG_BT_GATT_SERVER_NUM > 1)
+const int config_btctler_le_slave_multilink = 1;
+#else
+const int config_btctler_le_slave_multilink = 0;
 #endif
 
 #if CONFIG_APP_NONCONN_24G

@@ -102,14 +102,13 @@ BR22_TWS_VERSION = 0; //default fw version
 #if CONFIG_DB_UPDATE_DATA_GENERATE_EN
 DB_UPDATE_DATA = YES; //generate db_update_data.bin
 #endif
-#else
-NEW_FLASH_FS = YES;	//enable single bank flash framework
-#endif 				//CONFIG_DOUBLE_BANK_ENABLE
-
 #if CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE
 FORCE_4K_ALIGN = YES; // force aligin with 4k bytes
 SPECIAL_OPT = 0;		// only generate one flash.bin
 #endif
+#else
+NEW_FLASH_FS = YES;	//enable single bank flash framework
+#endif 				//CONFIG_DOUBLE_BANK_ENABLE
 
 #if ALIGN_UNIT_256B
 AREA_ALIGN = ALIGN_UNIT_256B; //using n*256B unit for boundary alignment
@@ -373,11 +372,11 @@ FINDMY_OPT = CONFIG_FINDMY_INFO_OPT;
 #endif
 
 [BURNER_PASSTHROUGH_CFG]
-FLASH_WRITE_PROTECT = YES;
+FLASH_WRITE_PROTECT = NO
 
 //烧写配置选项
-[BURNER_OPTIONS]
-GUI_DISABLED = TRUE;
+                      [BURNER_OPTIONS]
+                      GUI_DISABLED = TRUE;
 //LVD电压值要跟烧录器可选的显示值，一模一样，否则会报错不匹配
 LVD = 1.85v;
 

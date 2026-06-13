@@ -14,8 +14,6 @@
 extern "C" {
 #endif
 
-#include "misc/slist.h"
-
 /**
  * @brief Network buffer library
  * @defgroup net_buf Network Buffer Library
@@ -25,39 +23,6 @@ extern "C" {
 
 /* Alignment needed for various parts of the buffer definition */
 #define __net_buf_align __aligned(sizeof(int))
-
-/**
- * @brief Simple network buffer representation.
- *
- * This is a simpler variant of the net_buf object (in fact net_buf uses
- * net_buf_simple internally). It doesn't provide any kind of reference
- * counting, user data, dynamic allocation, or in general the ability to
- * pass through kernel objects such as FIFOs.
- *
- * The main use of this is for scenarios where the meta-data of the normal
- * net_buf isn't needed and causes too much overhead. This could be e.g.
- * when the buffer only needs to be allocated on the stack or when the
- * access to and lifetime of the buffer is well controlled and constrained.
- */
-struct net_buf_simple {
-    /** Pointer to the start of data in the buffer. */
-    u8_t *data;
-
-    /**
-     * Length of the data behind the data pointer.
-     *
-     * To determine the max length, use net_buf_simple_max_len(), not #size!
-     */
-    u16_t len;
-
-    /** Amount of data that net_buf_simple#__buf can store. */
-    u16_t size;
-
-    /** Start of the data storage. Not to be accessed directly
-     *  (the data pointer should be used instead).
-     */
-    u8_t *__buf;
-};
 
 /** @def NET_BUF_SIMPLE
  *  @brief Define a net_buf_simple stack variable and get a pointer to it.
@@ -81,24 +46,6 @@ struct net_buf_simple {
 	}) {                                         \
 		.buf.size = _size,                   \
 	}))
-
-/** @def NET_BUF_SIMPLE_DEFINE_STATIC
- *  @brief Define a static net_buf_simple variable.
- *
- *  This is a helper macro which is used to define a static net_buf_simple
- *  object.
- *
- *  @param _name Name of the net_buf_simple object.
- *  @param _size Maximum data storage for the buffer.
- */
-#define NET_BUF_SIMPLE_DEFINE_STATIC(_name, _size)        \
-	static __noinit u8_t net_buf_data_##_name[_size]; \
-	static struct net_buf_simple _name = {            \
-		.data   = net_buf_data_##_name,           \
-		.len    = 0,                              \
-		.size   = _size,                          \
-		.__buf  = net_buf_data_##_name,           \
-	}
 
 /** @brief Initialize a net_buf_simple object.
  *
@@ -316,18 +263,6 @@ u16_t net_buf_simple_pull_le16(struct net_buf_simple *buf);
 u16_t net_buf_simple_pull_be16(struct net_buf_simple *buf);
 
 /**
- * @brief Remove and convert 24 bits from the beginning of the buffer.
- *
- * Same idea as with net_buf_simple_pull(), but a helper for operating
- * on 24-bit little endian data.
- *
- * @param buf A valid pointer on a buffer.
- *
- * @return 24-bit value converted from little endian to host endian.
- */
-uint32_t net_buf_simple_pull_le24(struct net_buf_simple *buf);
-
-/**
  *  @brief Remove and convert 32 bits from the beginning of the buffer.
  *
  *  Same idea as with net_buf_simple_pull(), but a helper for operating
@@ -350,30 +285,6 @@ u32_t net_buf_simple_pull_le32(struct net_buf_simple *buf);
  *  @return 32-bit value converted from big endian to host endian.
  */
 u32_t net_buf_simple_pull_be32(struct net_buf_simple *buf);
-
-/**
- * @brief Add 64-bit value at the end of the buffer
- *
- * Adds 64-bit value in little endian format at the end of buffer.
- * Increments the data length of a buffer to account for more data
- * at the end.
- *
- * @param buf Buffer to update.
- * @param val 64-bit value to be added.
- */
-void net_buf_simple_add_le64(struct net_buf_simple *buf, u64_t val);
-
-/**
- * @brief Remove and convert 64 bits from the beginning of the buffer.
- *
- * Same idea as with net_buf_simple_pull(), but a helper for operating
- * on 64-bit little endian data.
- *
- * @param buf A valid pointer on a buffer.
- *
- * @return 64-bit value converted from little endian to host endian.
- */
-u64_t net_buf_simple_pull_le64(struct net_buf_simple *buf);
 
 /**
  *  @brief Get the tail pointer for a buffer.
@@ -719,7 +630,21 @@ extern const struct net_buf_data_cb net_buf_fixed_cb;
 
 #else
 
-#define NET_BUF_POOL_FIXED_DEFINE(_name, _count, _data_size, _ud_size, _destroy)
+#define NET_BUF_POOL_FIXED_DEFINE(_name, _count, _data_size, _destroy)        \
+	static struct net_buf net_buf_##_name[_count] __noinit;               \
+	static u8_t __noinit net_buf_data_##_name[_count][_data_size];        \
+	static const struct net_buf_pool_fixed net_buf_fixed_##_name = {      \
+		.data_size = _data_size,                                      \
+		.data_pool = (u8_t *)net_buf_data_##_name,                    \
+	};                                                                    \
+	static const struct net_buf_data_alloc net_buf_fixed_alloc_##_name = {\
+		.cb = &net_buf_fixed_cb,                                      \
+		.alloc_data = (void *)&net_buf_fixed_##_name,                 \
+	};                                                                    \
+	struct net_buf_pool _name __net_buf_align                             \
+			__in_section(_net_buf_pool, static, _name) =          \
+		NET_BUF_POOL_INITIALIZER(_name, &net_buf_fixed_alloc_##_name, \
+					 net_buf_##_name, _count, _destroy)
 
 #endif /* NET_BUF_USE_MALLOC */
 
@@ -913,7 +838,7 @@ void net_buf_reset(struct net_buf *buf);
  *  @param buf Buffer to initialize.
  *  @param reserve How much headroom to reserve.
  */
-// void net_buf_simple_reserve(struct net_buf_simple *buf, size_t reserve);
+void net_buf_simple_reserve(struct net_buf_simple *buf, size_t reserve);
 
 /**
  *  @brief Decrements the reference count of a buffer.
@@ -1265,7 +1190,7 @@ struct net_buf *net_buf_frag_add(struct net_buf *head, struct net_buf *frag);
  *  @return Pointer to the buffer following the fragment, or NULL if it
  *          had no further fragments.
  */
-#if (CONFIG_NET_BUF_LOG)
+#if defined(CONFIG_NET_BUF_LOG)
 struct net_buf *net_buf_frag_del_debug(struct net_buf *parent,
                                        struct net_buf *frag,
                                        const char *func, int line);
@@ -1352,7 +1277,7 @@ static inline struct net_buf *net_buf_skip(struct net_buf *buf, size_t len)
     while (buf && len--) {
         net_buf_pull_u8(buf);
         if (!buf->len) {
-            // buf = net_buf_frag_del(NULL, buf);//for compiler, not used now.
+            buf = net_buf_frag_del(NULL, buf);
         }
     }
 
@@ -1409,7 +1334,7 @@ struct net_buf *net_buf_slist_get(sys_slist_t *list);
 
 void net_buf_slist_simple_put(sys_slist_t *head_list, sys_snode_t *dst_node);
 
-struct bt_mesh_adv *net_buf_slist_simple_get(sys_slist_t *list);
+struct net_buf *net_buf_slist_simple_get(sys_slist_t *list);
 
 #endif /* MESH_ADAPTATION_OPTIMIZE */
 

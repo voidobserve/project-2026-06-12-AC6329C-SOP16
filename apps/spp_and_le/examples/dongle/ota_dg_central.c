@@ -325,7 +325,7 @@ void dongle_return_online_list(void)
  */
 /*************************************************************************************************/
 static u8 reconn_flag = 0;
-void check_is_reconn_succ(u8 state)
+void check_is_reconn_succ(u8 state, u16 con_handle)
 {
     u8 result = 0;
 
@@ -781,7 +781,7 @@ int dongle_pc_event_handler(struct dg_ota_event *dg_ota)
                     memcpy(&(deviece_ronn_massage.reconn_address[0]), &buf_total[7], 7);
                     put_buf(&(deviece_ronn_massage.reconn_address[0]), 7);
                     is_reconn_address_device = 1;
-                    reconn_timer = sys_timeout_add(0, check_is_reconn_succ, 8000);//暂时设置重连时间为8s
+                    reconn_timer = sys_timeout_add((0, 0), check_is_reconn_succ, 8000);//暂时设置重连时间为8s
                     log_info("reconnect start0");
                 } else {
                     //操作失败
@@ -793,7 +793,7 @@ int dongle_pc_event_handler(struct dg_ota_event *dg_ota)
                 log_info("reconnect is busy, plealse wait");
                 sys_timeout_del(reconn_timer);
                 reconn_flag = 1;//one step
-                reconn_timer = sys_timeout_add(0, check_is_reconn_succ, 8000);//暂时设置重连时间为8s
+                reconn_timer = sys_timeout_add((0, 0), check_is_reconn_succ, 8000);//暂时设置重连时间为8s
             }
         } else if (buf_total[7 + packet_length - 1] == 0x01) {
             //新地址回连接需要打开scan匹配adv再去回连接设备

@@ -11,7 +11,7 @@
 #if (JL_EARPHONE_APP_EN && RCSP_UPDATE_EN)
 #define VER_INFO_EXT_COUNT          2   //2
 #else
-#define VER_INFO_EXT_COUNT          2   //2
+#define VER_INFO_EXT_COUNT          0   //2
 #endif
 #define VER_INFO_EXT_MAX_LEN        24
 

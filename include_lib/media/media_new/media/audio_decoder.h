@@ -41,8 +41,6 @@ enum {
 
 enum {
     AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,
-    //固件自定义命令(非解码器命令)
-    AUDIO_IOCTRL_CMD_START_SILENCT_DROP = 0x1000,//开头静音数据丢弃处理
 };
 
 struct fixphase_repair_obj {

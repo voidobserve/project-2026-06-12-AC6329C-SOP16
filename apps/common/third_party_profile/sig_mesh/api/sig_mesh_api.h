@@ -4,47 +4,14 @@
 #include "api/basic_depend.h"
 #include "api/mesh_config.h"
 #include "kernel/atomic_h.h"
-#include "net/buf.h"
 #include "api/access.h"
 #include "api/main.h"
 #include "api/proxy.h"
-#include "api/cfg.h"
 #include "api/cfg_cli.h"
 #include "api/cfg_srv.h"
 #include "api/health_cli.h"
 #include "api/health_srv.h"
-#include "api/keys.h"
 #include "api/cdb.h"
-#include "api/sar_cfg.h"
-#include "api/rpr.h"
-#include "api/heartbeat.h"
-#include "api/blob.h"
-#include "api/blob_srv.h"
-#include "api/blob_cli.h"
-#include "api/dfd.h"
-#include "api/dfd_srv.h"
-#include "api/dfu.h"
-#include "api/dfu_cli.h"
-#include "api/dfu_metadata.h"
-#include "api/dfu_srv.h"
-#include "api/blob_io_flash.h"
-#include "api/large_comp_data_cli.h"
-#include "api/large_comp_data_srv.h"
-#include "api/od_priv_proxy_cli.h"
-#include "api/od_priv_proxy_srv.h"
-#include "api/op_agg_cli.h"
-#include "api/op_agg_srv.h"
-#include "api/priv_beacon_cli.h"
-#include "api/priv_beacon_srv.h"
-#include "api/rpr_cli.h"
-#include "api/rpr_srv.h"
-#include "api/sar_cfg_cli.h"
-#include "api/sar_cfg_srv.h"
-#include "api/sol_pdu_rpl_cli.h"
-#include "api/sol_pdu_rpl_srv.h"
-#include "api/scene.h"
-#include "api/scene_cli.h"
-#include "api/statistic.h"
 #include "system/debug.h"
 
 
@@ -61,90 +28,52 @@
 #define BT_MESH_ADDR_IS_VIRTUAL(addr) ((addr) >= 0x8000 && (addr) < 0xc000)
 #define BT_MESH_ADDR_IS_RFU(addr) ((addr) >= 0xff00 && (addr) <= 0xfffb)
 
-/** Shorthand macro for defining a model list directly in the element. */
-#define BT_MESH_MODEL_LIST(...) ((struct bt_mesh_model[]){ __VA_ARGS__ })
 
 //< error type
 #define ENONE           0  /* Err None */
-#define EPERM 1         /**< Not owner */
-#define ENOENT 2        /**< No such file or directory */
-#define ESRCH 3         /**< No such context */
-#define EINTR 4         /**< Interrupted system call */
-#define EIO 5           /**< I/O error */
-#define ENXIO 6         /**< No such device or address */
-#define E2BIG 7         /**< Arg list too long */
-#define ENOEXEC 8       /**< Exec format error */
-#define EBADF 9         /**< Bad file number */
-#define ECHILD 10       /**< No children */
-#define EAGAIN 11       /**< No more contexts */
-#define ENOMEM 12       /**< Not enough core */
-#define EACCES 13       /**< Permission denied */
-#define EFAULT 14       /**< Bad address */
-#define ENOTBLK 15      /**< Block device required */
-#define EBUSY 16        /**< Mount device busy */
-#define EEXIST 17       /**< File exists */
-#define EXDEV 18        /**< Cross-device link */
-#define ENODEV 19       /**< No such device */
-#define ENOTDIR 20      /**< Not a directory */
-#define EISDIR 21       /**< Is a directory */
-#define EINVAL 22       /**< Invalid argument */
-#define ENFILE 23       /**< File table overflow */
-#define EMFILE 24       /**< Too many open files */
-#define ENOTTY 25       /**< Not a typewriter */
-#define ETXTBSY 26      /**< Text file busy */
-#define EFBIG 27        /**< File too large */
-#define ENOSPC 28       /**< No space left on device */
-#define ESPIPE 29       /**< Illegal seek */
-#define EROFS 30        /**< Read-only file system */
-#define EMLINK 31       /**< Too many links */
-#define EPIPE 32        /**< Broken pipe */
-#define EDOM 33         /**< Argument too large */
-#define ERANGE 34       /**< Result too large */
-#define ENOMSG 35       /**< Unexpected message type */
-#define EDEADLK 45      /**< Resource deadlock avoided */
-#define ENOLCK 46       /**< No locks available */
-#define ENOSTR 60       /**< STREAMS device required */
-#define ENODATA 61      /**< Missing expected message data */
-#define ETIME 62        /**< STREAMS timeout occurred */
-#define ENOSR 63        /**< Insufficient memory */
-#define EPROTO 71       /**< Generic STREAMS error */
-#define EBADMSG 77      /**< Invalid STREAMS message */
-#define ENOSYS 88       /**< Function not implemented */
-#define ENOTEMPTY 90    /**< Directory not empty */
-#define ENAMETOOLONG 91 /**< File name too long */
-#define ELOOP 92        /**< Too many levels of symbolic links */
-#define EOPNOTSUPP 95   /**< Operation not supported on socket */
-#define EPFNOSUPPORT 96 /**< Protocol family not supported */
-#define ECONNRESET 104   /**< Connection reset by peer */
-#define ENOBUFS 105      /**< No buffer space available */
-#define EAFNOSUPPORT 106 /**< Addr family not supported */
-#define EPROTOTYPE 107   /**< Protocol wrong type for socket */
-#define ENOTSOCK 108     /**< Socket operation on non-socket */
-#define ENOPROTOOPT 109  /**< Protocol not available */
-#define ESHUTDOWN 110    /**< Can't send after socket shutdown */
-#define ECONNREFUSED 111 /**< Connection refused */
-#define EADDRINUSE 112   /**< Address already in use */
-#define ECONNABORTED 113 /**< Software caused connection abort */
-#define ENETUNREACH 114  /**< Network is unreachable */
-#define ENETDOWN 115     /**< Network is down */
-#define ETIMEDOUT 116    /**< Connection timed out */
-#define EHOSTDOWN 117    /**< Host is down */
-#define EHOSTUNREACH 118 /**< No route to host */
-#define EINPROGRESS 119  /**< Operation now in progress */
-#define EALREADY 120     /**< Operation already in progress */
-#define EDESTADDRREQ 121 /**< Destination address required */
-#define EMSGSIZE 122        /**< Message size */
-#define EPROTONOSUPPORT 123 /**< Protocol not supported */
-#define ESOCKTNOSUPPORT 124 /**< Socket type not supported */
-#define EADDRNOTAVAIL 125   /**< Can't assign requested address */
-#define ENETRESET 126       /**< Network dropped connection on reset */
-#define EISCONN 127         /**< Socket is already connected */
-#define ENOTCONN 128        /**< Socket is not connected */
-#define ETOOMANYREFS 129    /**< Too many references: can't splice */
-#define ENOTSUP 134         /**< Unsupported value */
-#define EILSEQ 138          /**< Illegal byte sequence */
-#define EOVERFLOW 139       /**< Value overflow */
-#define ECANCELED 140       /**< Operation canceled */
+#define	EPERM		    1	/* Operation not permitted */
+#define	ENOENT		    2	/* No such file or directory */
+#define	ESRCH		    3	/* No such process */
+#define	EINTR		    4	/* Interrupted system call */
+#define	EIO		        5	/* I/O error */
+#define	ENXIO		    6	/* No such device or address */
+#define	E2BIG		    7	/* Argument list too long */
+#define	ENOEXEC		    8	/* Exec format error */
+#define	EBADF		    9	/* Bad file number */
+#define	ECHILD		    10	/* No child processes */
+#define	EAGAIN		    11	/* Try again */
+#define	ENOMEM		    12	/* Out of memory */
+#define	EACCES		    13	/* Permission denied */
+#define	EFAULT		    14	/* Bad address */
+#define	ENOTBLK		    15	/* Block device required */
+#define	EBUSY		    16	/* Device or resource busy */
+#define	EEXIST		    17	/* File exists */
+#define	EXDEV		    18	/* Cross-device link */
+#define	ENODEV		    19	/* No such device */
+#define	ENOTDIR		    20	/* Not a directory */
+#define	EISDIR		    21	/* Is a directory */
+#define	EINVAL		    22	/* Invalid argument */
+#define	ENFILE		    23	/* File table overflow */
+#define	EMFILE		    24	/* Too many open files */
+#define	ENOTTY		    25	/* Not a typewriter */
+#define	ETXTBSY		    26	/* Text file busy */
+#define	EFBIG		    27	/* File too large */
+#define	ENOSPC		    28	/* No space left on device */
+#define	ESPIPE		    29	/* Illegal seek */
+#define	EROFS		    30	/* Read-only file system */
+#define	EMLINK		    31	/* Too many links */
+#define	EPIPE		    32	/* Broken pipe */
+#define	EDOM		    33	/* Math argument out of domain of func */
+#define	ERANGE		    34	/* Math result not representable */
+#define ENOTSUP         35      /* Unsupported value */
+#define EMSGSIZE        36     /* Message size */
+#define ENOBUFS         55      /* No buffer space available */
+#define ENOTCONN        57     /* Socket is not connected */
+#undef ETIMEDOUT
+#define ETIMEDOUT       60    /* Connection timed out */
+#define EALREADY        69    /* Operation already in progress */
+#define ECANCELED       72 /* Operation canceled */
+#define EBADMSG         77 /* Invalid STREAMS message */
 #define SL_ERROR_BSD_EADDRNOTAVAIL          (-99L)  /* Cannot assign requested address */
 #define EADDRNOTAVAIL                       SL_ERROR_BSD_EADDRNOTAVAIL
 
@@ -226,6 +155,52 @@
 		.__buf  = net_buf_data_##_name, \
 	}
 
+/** @def NET_BUF_SIMPLE_DEFINE_STATIC
+ *  @brief Define a static net_buf_simple variable.
+ *
+ *  This is a helper macro which is used to define a static net_buf_simple
+ *  object.
+ *
+ *  @param _name Name of the net_buf_simple object.
+ *  @param _size Maximum data storage for the buffer.
+ */
+#define NET_BUF_SIMPLE_DEFINE_STATIC(_name, _size)        \
+	static __noinit u8_t net_buf_data_##_name[_size]; \
+	static struct net_buf_simple _name = {            \
+		.data   = net_buf_data_##_name,           \
+		.len    = 0,                              \
+		.size   = _size,                          \
+		.__buf  = net_buf_data_##_name,           \
+	}
+
+/** @brief Simple network buffer representation.
+ *
+ *  This is a simpler variant of the net_buf object (in fact net_buf uses
+ *  net_buf_simple internally). It doesn't provide any kind of reference
+ *  counting, user data, dynamic allocation, or in general the ability to
+ *  pass through kernel objects such as FIFOs.
+ *
+ *  The main use of this is for scenarios where the meta-data of the normal
+ *  net_buf isn't needed and causes too much overhead. This could be e.g.
+ *  when the buffer only needs to be allocated on the stack or when the
+ *  access to and lifetime of the buffer is well controlled and constrained.
+ *
+ */
+struct net_buf_simple {
+    /** Pointer to the start of data in the buffer. */
+    u8_t *data;
+
+    /** Length of the data behind the data pointer. */
+    u16_t len;
+
+    /** Amount of data that this buffer can store. */
+    u16_t size;
+
+    /** Start of the data storage. Not to be accessed directly
+     *  (the data pointer should be used instead).
+     */
+    u8_t *__buf;
+};
 
 /**
  * @brief Add a unsigned char variable at the tail of the buffer.
@@ -368,15 +343,5 @@ void settings_load(void);
  * @return 0.
  */
 int bt_rand(void *buf, size_t len);
-
-/**
- * @brief
- *
- * @param init_cb The callback function.
- *
- * @return void.
- */
-
-void mesh_setup(void (*init_cb)(void));
 
 #endif /* __SIG_MESH_API_H__ */

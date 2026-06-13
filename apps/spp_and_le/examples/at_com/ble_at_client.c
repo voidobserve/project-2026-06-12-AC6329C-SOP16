@@ -464,8 +464,8 @@ static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data)
         case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
             tmp32 = adv_data_pt[lenght - 1];
             adv_data_pt[lenght - 1] = 0;;
-            log_info("remoter_name: %s\n", adv_data_pt);
-            log_info_hexdump(adv_address, 6);
+            // log_info("remoter_name: %s\n", adv_data_pt);
+            // log_info_hexdump(adv_address, 6);
             adv_data_pt[lenght - 1] = tmp32;
             //-------
 #if SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN

@@ -102,6 +102,7 @@
 #define DEVICE_EVENT_FROM_BOARD_UART   (('B' << 24) | ('D' << 16) | ('U' << 8) | '\0')
 
 enum {
+    KEY_EVENT_PRESS, 
     KEY_EVENT_CLICK,
     KEY_EVENT_LONG,
     KEY_EVENT_HOLD,

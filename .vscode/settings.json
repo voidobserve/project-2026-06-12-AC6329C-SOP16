@@ -26,15 +26,20 @@
         "editor.formatOnSave": false,
     },
     "files.associations": {
-        "board_ac6321a_demo_global_build_cfg.h": "c",
-        "board_ac6321a_demo_cfg.h": "c",
-        "board_ac632n_demo_cfg.h": "c",
-        "app_config.h": "c",
-        "jl_kws_api.h": "c",
-        "task.h": "c",
-        "update_loader_download.h": "c"
-    },
-    "taskManager.favorites": [
-        "project-2026-06-12-AC6329C-SOP16/Workspace/ac632n_spp_and_le"
-    ]
+        "board_ac6329c_demo_global_build_cfg.h": "c",
+        "rf24g_key.h": "c",
+        "one_wire.h": "c",
+        "btstack_event.h": "c",
+        "adafruit_typedef.h": "c",
+        "led_strip_sys.h": "c",
+        "led_strand_effect.h": "c",
+        "includes.h": "c",
+        "rf24g_app.h": "c",
+        "save_flash.h": "c",
+        "rf433_key.h": "c",
+        "ws2812fx_effect.h": "c",
+        "ws2812fx.h": "c",
+        "WS2812FX.H": "cpp",
+        "rf433_learn.h": "c"
+    }
 }

@@ -201,7 +201,6 @@ const u8 *usb_get_string_desc(u32 id)
 
 void get_device_info_to_ota(void *parm_priv)
 {
-#if 0
     u8 *tmp = parm_priv;
     memcpy(tmp, &(sDeviceDescriptor[8]), 4);
     tmp[8]++;
@@ -211,52 +210,6 @@ void get_device_info_to_ota(void *parm_priv)
     } else {
         memcpy(&(parm_priv[4]), product_string, product_string[0]);
     }
-#else
-    //传进来的*parm_priv 数据格式按以下排布
-    /*typedef struct
-    {
-        u16 vid;
-        u16 pid;
-        u16 version_bcd;
-        u8  Manufacturer_str[18];
-        u8  Product_str[18];
-        u8  SerialNumber_str[18];
-    }usb_descriptor_t;*/
-
-    //copy vid,pid,bcd
-    u8 *tmp = parm_priv;
-    memcpy(tmp, &(sDeviceDescriptor[8]), 6);
-
-    //copy Manufacturer_str
-    tmp += 6;
-    if (MANUFACTURE_STR[0] > 18) {
-        log_error("The MANUFACTURE_STR length is more than 18 Byte");
-        memcpy(tmp, MANUFACTURE_STR, 18);
-        tmp[0] = 18;
-    } else {
-        memcpy(tmp, MANUFACTURE_STR, MANUFACTURE_STR[0]);
-    }
-
-    //copy product_string
-    tmp += 18;
-    if (product_string[0] > 18) {
-        log_error("The product_string length is more than 18 Byte");
-        memcpy(tmp, product_string, 18);
-        tmp[0] = 18;
-    } else {
-        memcpy(tmp, product_string, product_string[0]);
-    }
-
-    //copy SerialNumber_str
-    tmp += 18;
-    if (serial_string[0] > 18) {
-        log_error("The serial_string length is more than 18 Byte");
-        memcpy(tmp, serial_string, 18);
-        tmp[0] = 18;
-    } else {
-        memcpy(tmp, serial_string, serial_string[0]);
-    }
-#endif
 }
 
 #endif

@@ -78,7 +78,7 @@ void custom_evt_1_send_test(uint8_t data)
     event.evt_id = APP_CUSTOM_EVENT_1;
     event.custom_event_handler = (void *)custom_data_process;
     event.data = &custom_data;
-    tuya_ble_custom_event_send(&event);
+    tuya_ble_custom_event_send(event);
 }
 
 static uint16_t sn = 0;
