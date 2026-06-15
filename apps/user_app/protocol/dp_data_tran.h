@@ -129,12 +129,14 @@ extern dp_draw_tool_t    dp_draw_tool;    //DPID_DRAW_TOOL 涂抹功能
 void parse_zd_data(unsigned char *LedCommand, u8 len);
 // int string2hex(char* str,char* hex,uint8_t str_len);
 unsigned long string_hex_Byte(char* str, unsigned char Byte_num);
-unsigned short dp_extract_data_handle(unsigned char *buff);
+// unsigned short dp_extract_data_handle(unsigned char *buff);
 extern void printf_buf(u8 *buf, u32 len);
 
 void fd_meteor_on_off(void); // 向app反馈流星灯开关状态
 void fb_motor_speed(void); // 向app反馈电机速度值
 void fd_meteor_speed(void); // 向app反馈流星灯速度值
+
+void fb_music_type(u8 type); // 声控类型：手机麦或者设备麦
 
 #endif
 

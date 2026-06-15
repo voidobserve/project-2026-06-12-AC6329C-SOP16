@@ -403,11 +403,10 @@ void main_while(void)
 
 // 自定义一个简易的消息控制
 // typedef struct
-// {   
+// {
 
 //     u8 flag_is_msg_;
 //     // u8 flag_is_
-
 
 //     void (*)(void);
 // } user_msg_handle_t;
@@ -448,10 +447,10 @@ void user_msg_handle_task(void)
         switch (msg[1])
         {
         case MSG_SEQUENCER_ONE_WIRE_SEND_INFO: // 使能单线发送
-        { 
+        {
             motor_send_data();
         }
-        break; 
+        break;
 
         case MSG_USER_SAVE_INFO:
         {
@@ -471,6 +470,7 @@ void WS2812_circle_task(void)
     sound_handle();
     run_tick_per_10ms();
     WS2812FX_service();
+    // printf("WS2812_circle_task\n");
 }
 
 void motor_task(void)
@@ -487,33 +487,32 @@ void ble_notify_task(void)
 {
     while (1)
     {
-        user_ble_notify_obj.param_handle(); 
+        user_ble_notify_obj.param_handle();
         /*
             notify 需要一段时间才能发送，
             如果直接一次性修改发送，会导致旧数据被覆盖
         */
-        os_time_dly(1); 
+        os_time_dly(1);
     }
 }
 
 void my_main(void)
-{
-    // led_gpio_init();     // 七彩灯输出口
-    // led_pwm_init();      // 七彩灯输出口对应的pwm
-    mic_gpio_init();     // mic
-    led_strip_driver_init();    //   
-    led_strip_rgb_schedule_init();       
+{ 
+    mic_gpio_init();         // mic
+    led_strip_driver_init(); //
+    led_strip_rgb_schedule_init();
+    led_strip_white_schedule_init();
 
-    fc_data_init();
-    fc_effect.sequence = NEO_RBG;
-    WS2812FX_init(LED_STRIP_RGB_LEN + LED_STRIP_WHITE_LEN ,fc_effect.sequence);
-    WS2812FX_setBrightness( fc_effect.b );
+    // fc_data_init();
+    WS2812FX_init(LED_STRIP_RGB_LEN + LED_STRIP_WHITE_LEN, fc_effect.sequence);
+    WS2812FX_setBrightness(fc_effect.b);
     fc_effect.on_off_flag = DEVICE_ON;
 
-    // USER_TO_DO 
+    // USER_TO_DO
     led_strip_rgb_schedule(); // 只在测试时使用
+    led_strip_white_schedule();
 
-    sys_s_hi_timer_add(NULL, WS2812_circle_task, 10); // 10ms 
+    sys_s_hi_timer_add(NULL, WS2812_circle_task, 10); // 10ms
     task_create(ble_notify_task, NULL, "usr_ble_task");
     task_create(user_msg_handle_task, NULL, "msg_task");
     /*

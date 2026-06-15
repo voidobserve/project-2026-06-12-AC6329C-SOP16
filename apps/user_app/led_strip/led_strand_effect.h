@@ -43,38 +43,31 @@ typedef enum
 // 变化方式
 typedef enum
 {
-    MODE_MUTIL_RAINBOW = 2,            // 彩虹(多段颜色)
-    MODE_MUTIL_JUMP = 10,              // 跳变模式(多段颜色)
-    MODE_MUTIL_BRAETH = 11,            // 呼吸模式(多段颜色)
-    MODE_MUTIL_TWIHKLE = 12,           // 闪烁模式(多段颜色)
-    MODE_MUTIL_FLOW_WATER = 13,        // 流水模式(多段颜色)
-    MODE_CHAS_LIGHT = 14,              // 追光模式
-    MODE_MUTIL_COLORFUL = 15,          // 炫彩模式(多段颜色)
-    MODE_MUTIL_SEG_GRADUAL = 16,       // 渐变模式(多段颜色)
-    MODE_JUMP,                         // 标准跳变
-    MODE_STROBE,                       // 频闪，颜色之间插入黑mode
-    MODE_MUTIL_C_GRADUAL,              // 多种颜色切换整条渐变
-    MODE_2_C_FIX_FLOW,                 // 两种颜色混合流水，渐变色流水
-    MODE_SINGLE_FLASH_RANDOM = 21,     /// 星空效果，单灯随机闪烁
-    MODE_SEG_FLASH_RANDOM = 22,        // 星云效果，一段随机闪烁
-    MODE_SINGLE_METEOR = 23,           // 流星效果
-    MODE_SINGLE_C_BREATH = 24,         // 单色呼吸
-    MODE_B_G_METEOR = 25,              // 带背景色流星
-    MODE_OPEN = 26,                    // 开幕式
-    MODE_CLOSE = 27,                   // 闭幕式
-    MODE_DOT_RUNNING = 28,             // 多个点跑马 ，点和点直接固定间隔5，支持每个点不同颜色，支持设置背景色
-    MODE_DOT_RUNNING_COLLECTIONS = 29, // 跑马集合模式
-    MODE_SINGLE_SUPERPOSITION = 30,    // 单色堆积
-    MODE_B_G_SUPERPOSITION = 31,       // 带底色堆积
-    MODE_MUTILE_SUPERPOSITION = 32,    // 多色堆积，不灭
-    MODE_BREATH_W = 33,                // W通道呼吸
-    MODE_GRADUAL = 34,                 // 标准渐变，彩虹颜色
-    MODE_MUTIL_C_BREATH = 35,
-
-    MODE_COLOR_METEOR,  // 无背景色，指定颜色的流星
-    MODE_JUMP_METEORR,  // 跳变效果的流星
-    MODE_GRADUAL_METEOR, // 渐变效果的流星
-    MODE_RAINBOW_FLOW,
+    MODE_MUTIL_RAINBOW = 2,        // 彩虹(多段颜色)
+    MODE_MUTIL_JUMP = 10,          // 跳变模式(多段颜色)
+    MODE_MUTIL_BRAETH = 11,        // 呼吸模式(多段颜色)
+    MODE_MUTIL_TWIHKLE = 12,       // 闪烁模式(多段颜色)
+    MODE_MUTIL_FLOW_WATER = 13,    // 流水模式(多段颜色)
+    MODE_CHAS_LIGHT = 14,          // 追光模式
+    MODE_MUTIL_COLORFUL = 15,      // 炫彩模式(多段颜色)
+    MODE_MUTIL_SEG_GRADUAL = 16,   // 渐变模式(多段颜色)
+    MODE_JUMP,                     // 标准跳变
+    MODE_STROBE,                   // 频闪，颜色之间插入黑mode
+    MODE_MUTIL_C_GRADUAL,          // 多种颜色切换整条渐变
+    MODE_2_C_FIX_FLOW,             // 两种颜色混合流水，渐变色流水
+    MODE_SINGLE_FLASH_RANDOM = 21, // 星空效果，单灯随机闪烁
+    MODE_SEG_FLASH_RANDOM = 22,    // 星云效果，一段随机闪烁
+    MODE_SINGLE_METEOR = 23,       // 流星效果
+    MODE_SINGLE_C_BREATH = 24,     // 单色呼吸
+    MODE_B_G_METEOR = 25,          // 带背景色流星
+    MODE_OPEN = 26,                // 开幕式
+    MODE_CLOSE = 27,               // 闭幕式
+    MODE_DOT_RUNNING = 28,         // 多个点跑马 ，点和点直接固定间隔5，支持每个点不同颜色，支持设置背景色
+    MODE_COLOR_METEOR = 29,        // 无背景色，指定颜色的流星
+    MODE_JUMP_METEORR = 30,        // 跳变效果的流星
+    MODE_GRADUAL_METEOR = 31,      // 渐变效果的流星
+    MODE_RAINBOW_FLOW = 32,
+ 
 
     // MODE_COLORFUL_LIGHTS_FLASH, // 七彩灯频闪
     // MODE_COLORFUL_JUMP,         // 七彩灯跳变
@@ -153,11 +146,11 @@ typedef struct
 typedef struct
 {
     unsigned char on_off_flag; // 开关状态
-    unsigned char led_num;     // 灯点数
+    u16 led_num;     // 灯点数
     unsigned char sequence;    // RGB通道顺序
     unsigned char b;           // 本地亮度 brightness 范围： 0 ~ 255
-    unsigned char b_per;          //亮度档位，APP下发
-    unsigned char speed;          //档位1-100
+    unsigned char b_per;       // 亮度档位，APP下发
+    unsigned char speed;       // 档位1-100
     unsigned char app_b;       // 反馈给APP亮度 范围： 0 ~ 100
     unsigned char app_speed;   // 反馈给APP速度 范围： 0 ~ 100
 
@@ -168,8 +161,8 @@ typedef struct
     u16 period_cnt;              // ms,运行时的计数器 范围： 2000 ~ 20000
 
     u8 colorful_lights_sensitivity; // 声控模式下，七彩灯的灵敏度 范围： 0 ~ 100
-    Now_state_e Now_state; // 当前运行模式 
-    dream_scene_t dream_scene; // 幻彩情景
+    Now_state_e Now_state;          // 当前运行模式
+    dream_scene_t dream_scene;      // 幻彩情景
 
     music_t music; // 音乐效果
 
@@ -185,8 +178,11 @@ typedef struct
     unsigned char motor_speed_index; // 电机模式或电机速度索引
     unsigned char app_rgb_mode;      // 七彩灯的模式索引，一般由app设置，目前加入了遥控器切换
 
+    countdown_t countdown; // 倒计时
+
+    u8 custom_mode_index;   // custom 模式索引
+
 } fc_effect_t;
- 
 
 #pragma pack()
 

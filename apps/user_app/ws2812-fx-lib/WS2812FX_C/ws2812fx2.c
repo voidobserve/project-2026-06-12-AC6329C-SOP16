@@ -120,7 +120,6 @@ void WS2812FX_service()
 
         if(now >= _seg_rt->next_time || 
           _triggered || 
-          (_triggered_by_colorful_lights && i == 0) ||  // 由七彩灯触发，并且当前灯是七彩灯（目前是第0段）
           (_triggered_by_meteor_lights && i == 1) // 由流星灯触发，并且当前灯是流星灯（目前是第1段）
         ) 
         {
@@ -144,15 +143,15 @@ void WS2812FX_service()
       _triggered = false;
     }
 
-    if (_triggered_by_colorful_lights)
-    {
-      _triggered_by_colorful_lights = false;
-    }
+    // if (_triggered_by_colorful_lights)
+    // {
+    //   _triggered_by_colorful_lights = false;
+    // }
 
-    if (_triggered_by_meteor_lights)
-    {
-      _triggered_by_meteor_lights = false;
-    }
+    // if (_triggered_by_meteor_lights)
+    // {
+    //   _triggered_by_meteor_lights = false;
+    // }
     
   }
 }

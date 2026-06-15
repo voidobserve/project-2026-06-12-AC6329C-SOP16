@@ -9,6 +9,7 @@
 
 #include "../../../apps/user_app/ws2812-fx-lib/WS2812FX_C/WS2812FX.H"
 #include "../../../apps/user_app/rf433_key/rf433_learn.h"
+#include "led_strip_driver.h"
 
 volatile fc_effect_t fc_effect; // 幻彩灯串效果数据
 void set_fc_effect(void);
@@ -108,24 +109,6 @@ static void static_mode(void)
 }
 
 /*----------------------------------彩虹效果----------------------------------*/
-static void strand_rainbow(void)
-{
-    WS2812FX_stop();
-    WS2812FX_setSegment_colorOptions(
-        0,                           // 第0段
-        0, 0,                        // 起始位置，结束位置
-        &WS2812FX_mode_mutil_fade,   // 效果
-        0,                           // 颜色，WS2812FX_setColors设置
-        fc_effect.dream_scene.speed, // 速度
-        SIZE_SMALL);                 // 选项，这里像素点大小：1
-
-    WS2812FX_set_coloQty(0, fc_effect.dream_scene.c_n);
-    ls_set_colors(fc_effect.dream_scene.c_n, &fc_effect.dream_scene.rgb);
-
-    // WS2812FX_start();
-    WS2812FX_resetSegmentRuntime(0); // 清除指定段的显示缓存
-    WS2812FX_running_flag_set();
-}
 
 /*----------------------------------跳变效果----------------------------------*/
 void strand_jump_change(void)
@@ -760,9 +743,9 @@ static void ls_scene_effect(void)
     switch (fc_effect.dream_scene.change_type)
     {
 
-    case MODE_MUTIL_RAINBOW: // 彩虹
-        strand_rainbow();
-        break;
+        // case MODE_MUTIL_RAINBOW: // 彩虹
+        //     strand_rainbow();
+        //     break;
 
     case MODE_MUTIL_JUMP: // 跳变模式
         strand_jump_change();
@@ -801,9 +784,9 @@ static void ls_scene_effect(void)
         mutil_c_grandual();
         break;
 
-    case MODE_BREATH_W: // 白色渐变
-        w_grandual();
-        break;
+        // case MODE_BREATH_W: // 白色渐变
+        //     w_grandual();
+        //     break;
 
     case MODE_STROBE: // 标准频闪
         ls_strobe();
@@ -935,6 +918,7 @@ static void ls_custom_effect(void)
  */
 void ls_meteor_stat_effect(void)
 {
+#if 0
     mode_ptr meteor_light_mode_ptr = NULL;
     u8 opt = NO_OPTIONS;
 
@@ -1048,16 +1032,18 @@ void ls_meteor_stat_effect(void)
 
     WS2812FX_stop();
     WS2812FX_setSegment_colorOptions(
-        1,                           // 第 x 段
-        1,                           // 起始位置
-        fc_effect.led_num - 1,       // 结束位置
-        meteor_light_mode_ptr,      // 效果
+        LED_STRIP_WHITE_STAR_INDEX,  // 第 x 段
+        LED_STRIP_WHITE_STAR_INDEX,  // 起始位置
+        LED_STRIP_WHITE_LEN - 1,     // 结束位置
+        meteor_light_mode_ptr,       // 效果
         WHITE,                       // 颜色
         fc_effect.star_speed,        // 速度
         opt);                        // 选项
     WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
     WS2812FX_running_flag_set();
     os_taskq_post("msg_task", 1, MSG_USER_SAVE_INFO);
+
+#endif
 }
 
 /**
@@ -1173,7 +1159,7 @@ void set_fc_effect(void)
     if (DEVICE_OFF == fc_effect.on_off_flag)
     {
         return;
-    } 
+    }
 
     switch (fc_effect.Now_state)
     {

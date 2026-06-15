@@ -3212,7 +3212,14 @@ uint16_t WS2812FX_mode_theater_chase_rainbow(void)
 uint16_t WS2812FX_mode_running_lights(void)
 {
     uint8_t size = 1 << SIZE_OPTION;
-    uint8_t sineIncr = max(1, (256 / _seg_len) * size);
+    uint8_t param;
+    param = _seg_len;
+    if (_seg_len > 64)
+    {
+        param = 64;
+    }
+
+    uint8_t sineIncr = max(1, (256 / param) * size);
     for (uint16_t i = 0; i < _seg_len; i++)
     {
         int lum = (int)Adafruit_NeoPixel_sine8(((i + _seg_rt->counter_mode_step) * sineIncr));
@@ -3229,7 +3236,7 @@ uint16_t WS2812FX_mode_running_lights(void)
     _seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) % 256;
     if (_seg_rt->counter_mode_step == 0)
         SET_CYCLE;
-    return (_seg->speed / _seg_len);
+    return (_seg->speed);
 }
 
 /*
@@ -3355,19 +3362,15 @@ uint16_t WS2812FX_mode_breath(void)
 
     uint32_t color = WS2812FX_color_blend(_seg->colors[1], _seg->colors[0], lum);
     Adafruit_NeoPixel_fill(color, _seg->start, _seg_len);
-    if (_seg_rt->counter_mode_step < 35)
-    {
-        _seg_rt->counter_mode_step += 1;
-    }
-    else
-        _seg_rt->counter_mode_step += 2; // 不能修改+2，否则呼吸有明显的不流畅
+
+    _seg_rt->counter_mode_step += 2;
     if (_seg_rt->counter_mode_step > (512 - 5))
     {
         _seg_rt->counter_mode_step = 5;
         SET_CYCLE;
-        ws2811fx_set_cycle = 1;
-    }
-    return (fc_effect.dream_scene.speed / 50 * 10 + fc_effect.dream_scene.speed % 50); // 原来的速度对遥控调速变化太大了
+    } 
+
+    return _seg->speed;
 }
 
 /*
@@ -3516,6 +3519,7 @@ uint16_t WS2812FX_mode_static(void)
     Adafruit_NeoPixel_fill(_seg->colors[0], _seg->start, _seg_len);
     SET_CYCLE;
     // ws2811fx_set_cycle = 1;
+
     return _seg->speed;
 }
 
@@ -3526,8 +3530,8 @@ uint16_t WS2812FX_mutil_c_jump(void)
     Adafruit_NeoPixel_fill(_seg->colors[_seg_rt->counter_mode_step], _seg->start, _seg_len);
     _seg_rt->counter_mode_step++;
     _seg_rt->counter_mode_step %= _seg->c_n;
-    if (_seg_rt->counter_mode_step == 0)
-        ws2811fx_set_cycle = 1;
+    // if (_seg_rt->counter_mode_step == 0)
+    //     ws2811fx_set_cycle = 1;
     return _seg->speed;
 }
 

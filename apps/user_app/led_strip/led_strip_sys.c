@@ -69,7 +69,7 @@ void fc_data_init(void)
     fc_effect.colorful_lights_sensitivity = 85; // 七彩灯声控模式下，对应的灵敏度
     // fc_effect.colorful_lights_sensitivity = 100; // 七彩灯声控模式下，对应的灵敏度
 
-    fc_effect.app_rgb_mode = 0;
+    // fc_effect.app_rgb_mode = 0;
     // 闹钟
     // zd_countdown[0].set_on_off = DEVICE_OFF;
     // zd_countdown[1].set_on_off = DEVICE_OFF;
@@ -350,7 +350,7 @@ void app_set_bright(u8 tp_b)
 u16 get_max_sp(void)
 {
     u16 s;
-    s = fc_effect.led_num * 30 / 1000; // 每个LED30us
+    s = (u32)fc_effect.led_num * 30 / 1000; // 每个LED30us
     if (s < MAX_FAST_SPEED)
         s = MAX_FAST_SPEED;
     return s; //
@@ -391,7 +391,7 @@ void app_set_speed(u8 tp_speed)
     printf("app_speed = %u\n", (u16)fc_effect.app_speed);
     printf("fc_effect.dream_scene.speed = %u\n", (u16)fc_effect.dream_scene.speed);
 }
- 
+
 /**
  * @brief  app设置灵敏度
  *
@@ -453,7 +453,6 @@ void ls_sub_sensitive(void)
 
     printf(" fc_effect.music.s= %d", fc_effect.music.s);
 }
- 
 
 /**
  * @brief 遥控开关
@@ -817,19 +816,19 @@ const u8 meteor_cycle[5] = {2, 8, 12, 16, 20}; // 2s 8s 12s 16s 20s
 u8 cycle_cntt = 0;
 
 // 由遥控器设置流星灯周期
-void ls_set_star_pro(void)
-{
-    if (fc_effect.star_on_off != DEVICE_ON)
-        return;
-    app_set_meteor_pro(meteor_cycle[cycle_cntt]);
-    ls_meteor_stat_effect();
-    cycle_cntt++;
-    if (cycle_cntt > 4)
-        cycle_cntt = 0;
+// void ls_set_star_pro(void)
+// {
+//     if (fc_effect.star_on_off != DEVICE_ON)
+//         return;
+//     app_set_meteor_pro(meteor_cycle[cycle_cntt]);
+//     ls_meteor_stat_effect();
+//     cycle_cntt++;
+//     if (cycle_cntt > 4)
+//         cycle_cntt = 0;
 
-    printf("fc_effect.meteor_period = %d", fc_effect.meteor_period);
-    fd_meteor_cycle();
-}
+//     printf("fc_effect.meteor_period = %d", fc_effect.meteor_period);
+//     fd_meteor_cycle();
+// }
 
 /*********************************************************
  *
@@ -912,15 +911,13 @@ void app_set_w(u8 tp_w)
 void set_static_mode(u8 r, u8 g, u8 b)
 {
     fc_effect.Now_state = IS_STATIC;
-    fc_effect.rgb.r = r;
-    fc_effect.rgb.g = g;
-    fc_effect.rgb.b = b;
+    fc_effect.dream_scene.rgb[0].r = r;
+    fc_effect.dream_scene.rgb[0].g = g;
+    fc_effect.dream_scene.rgb[0].b = b;
     // fc_effect.rgb.w = 0;
 
     // printf("r = %d, g = %d, b = %d", r, g, b);
- 
 
-    // set_fc_effect(); // 效果调度
     led_strip_rgb_schedule();
 }
 
@@ -957,7 +954,7 @@ void colorful_lights_set_static_color(u32 color)
     // fc_effect.rgb.w = color >> 24;
 
     set_fc_effect(); // 效果调度
-} 
+}
 
 // 全彩效果初始化
 void full_color_init(void)
@@ -976,7 +973,7 @@ void full_color_init(void)
     //     colorful_light_close();
     // }
     // fb_led_on_off_state(); // 与app反馈七彩灯的开关状态
- 
+
 // USER_TO_DO 暂时屏蔽
 #if 0
     if (fc_effect.star_on_off == DEVICE_ON)

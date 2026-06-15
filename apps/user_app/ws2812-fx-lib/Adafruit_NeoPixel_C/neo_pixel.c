@@ -75,6 +75,7 @@ void ws281x_show(unsigned char *pixels_pattern, unsigned short pattern_size)
     // 纯白色流星灯的数据，当成RGB数据来发送
     // 结合DMA传输，需要四字节对齐，否则会错位：
     memcpy(white_light_buf, (pixels_pattern + LED_STRIP_RGB_LEN * 3), LED_STRIP_WHITE_LEN * 3);
+    // printf_buf(white_light_buf, LED_STRIP_WHITE_LEN * 3);
     ledc_send_rgbbuf(
         1,
         white_light_buf, // 跳过RGB灯的数据（RGB三个字节 * RGB灯数量）

@@ -86,7 +86,7 @@ typedef struct
 
 typedef enum
 {
-    DEVICE_OFF, // 关机
+    DEVICE_OFF = 0x00, // 关机
     DEVICE_ON,  // 开机
 } ON_OFF_FLAG;
 
