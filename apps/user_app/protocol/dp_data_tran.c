@@ -97,19 +97,19 @@ void dp_extract_data_handle(unsigned char *buff)
     /*提取DP数据*/
     switch (dp_data_header.id)
     {
-    // case DPID_SWITCH_LED: // 开关(可下发可上报)
-    //     printf("\r\n DPID_SWITCH_LED");
+        // case DPID_SWITCH_LED: // 开关(可下发可上报)
+        //     printf("\r\n DPID_SWITCH_LED");
 
-    //     fc_effect.on_off_flag = buff[4];
-    //     if (fc_effect.on_off_flag == DEVICE_ON)
-    //     { 
-    //         // soft_turn_on_the_light();
-    //     }
-    //     else
-    //     { 
-    //         // soft_rurn_off_lights();
-    //     }
-    //     break;
+        //     fc_effect.on_off_flag = buff[4];
+        //     if (fc_effect.on_off_flag == DEVICE_ON)
+        //     {
+        //         // soft_turn_on_the_light();
+        //     }
+        //     else
+        //     {
+        //         // soft_rurn_off_lights();
+        //     }
+        //     break;
 
     case DPID_WORK_MODE: // 工作模式(可下发可上报)
         dp_work_mode.mode = buff[4];
@@ -480,7 +480,7 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
     else if (LedCommand[0] == 0x06 &&
              LedCommand[1] == 0x02)
     {
-        // 设置系统时间 小时-分钟-秒-星期 
+        // 设置系统时间 小时-分钟-秒-星期
     }
     else if (LedCommand[0] == 0x05)
     {
@@ -819,8 +819,11 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             u8 speed = LedCommand[2];
 
             led_strip_white.app_speed = speed;
-            // 最后得到的数值会在 30 ~ 330
-            led_strip_white.speed = 300 * (100 - fc_effect.app_star_speed + 10) / 100;
+            // 最后得到的数值会在 30 ~ 330，数值越小，速度越快
+            led_strip_white.speed = 300 * (100 - led_strip_white.app_speed + 10) / 100;
+#if USER_DEBUG_ENABLE
+            // printf("led_strip_white.speed == %u\n", (u16)led_strip_white.speed);
+#endif
             led_strip_white_schedule();
             report_meteor_speed(led_strip_white.app_speed);
         }

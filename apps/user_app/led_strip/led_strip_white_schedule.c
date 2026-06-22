@@ -15,7 +15,7 @@ void led_strip_white_schedule_init(void)
 	led_strip_white.speed = (u32)330 * led_strip_white.app_speed / 100;
 	led_strip_white.period = 2;									// 默认 2 秒  周期值
 	led_strip_white.period_cnt = led_strip_white.period * 1000; // 周期值计数值，单位 ms
-	led_strip_white.is_one_cycle_comleted = 0;
+	// led_strip_white.is_one_cycle_comleted = 0;
 	led_strip_white.sensitivity = 85;
 }
 

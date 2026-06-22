@@ -538,11 +538,11 @@ static int multi_make_set_adv_data(void)
 
     // info[index++] = 'Z';
     // info[index++] = 'D';
-    // info[index++] = 0x00; //  
-    // info[index++] = 0xD9; //
-    // info[index++] = 0x03; //
-    // info[index++] = 0x5F; //
-    // info[index++] = 0x64; //
+    // info[index++] = 0x48;
+    // info[index++] = 0x43;
+    // info[index++] = 0x00;
+    // info[index++] = 0x00;
+    // info[index++] = 0x01;
 
 
     le_controller_get_mac(&info[index]); // 获取ble的蓝牙public地址

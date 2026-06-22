@@ -12,7 +12,7 @@ typedef struct
 	u16 speed;				  // 实际驱动时，使用到的速度值
 	u8 period;				  // 流星灯周期值
 	u16 period_cnt;			  // 周期值计数
-	u8 is_one_cycle_comleted; // 一轮动画循环是否结束
+	// u8 is_one_cycle_comleted; // 一轮动画循环是否结束
 	u8 sensitivity;			  // 灵敏度
 } led_strip_white_t;
 extern volatile led_strip_white_t led_strip_white;

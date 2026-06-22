@@ -5,6 +5,7 @@
 #include "led_strip_rgb_anim.h" // 动画效果
 #include "Adafruit_NeoPixel.H"
 #include "ws2812fx_effect.h"
+#include "user_include.h"
 
 void led_strip_rgb_strand_rainbow_handler(void);
 void led_strip_rgb_multi_jump_handler(void); // 多种颜色跳变
@@ -21,13 +22,17 @@ void led_strip_rgb_schedule_init(void)
 {
 	fc_effect.on_off_flag = DEVICE_ON;
 	fc_effect.led_num = LED_STRIP_RGB_LEN;
-	fc_effect.Now_state = IS_light_scene;
+	fc_effect.Now_state = IS_STATIC;
+
+	fc_effect.rgb.r = 255;
+	fc_effect.rgb.g = 0;
+	fc_effect.rgb.b = 0;
 
 	fc_effect.sequence = NEO_RGB;
 	fc_effect.b = 255;
-	fc_effect.app_b = 100;
+	fc_effect.app_b = 100; // 反馈给app的亮度，单位：百分比
 
-	fc_effect.app_speed = 90;
+	fc_effect.app_speed = 80;
 	fc_effect.dream_scene.speed = (500 - (u32)fc_effect.app_speed * 500 / 100);
 	fc_effect.music.m = 1;
 	fc_effect.music.s = 85;
@@ -37,15 +42,11 @@ void led_strip_rgb_schedule_init(void)
 	fc_effect.period_cnt = fc_effect.meteor_period * 1000; // ms,运行时的计数器
 	fc_effect.mode_cycle = 0;							   // 模式完成一个循环的标志
 
-	// zd_countdown[0].set_on_off = DEVICE_OFF;
-	// zd_countdown[1].set_on_off = DEVICE_OFF;
-	// zd_countdown[2].set_on_off = DEVICE_OFF;
-
 	fc_effect.dream_scene.c_n = 1;
 	fc_effect.dream_scene.rgb[0].r = 255;
 	fc_effect.dream_scene.rgb[0].g = 0;
 	fc_effect.dream_scene.rgb[0].b = 0;
-	fc_effect.dream_scene.change_type = MODE_COLOR_METEOR;
+	// fc_effect.dream_scene.change_type = MODE_COLOR_METEOR;
 
 #if 0
 	// led_strip_rgb.dream_scene.speed = 100;
@@ -63,27 +64,27 @@ void led_strip_rgb_schedule_init(void)
 // USER_TO_DO 下面这些处理函数，都可以用查表的方法，把动画、速度、配置写到映射表中：
 
 // 单个，全彩颜色的流星效果
-void led_strip_rgb_color_meteor_handler(void)
-{
-	mode_ptr mode;
-	uint8_t option;
+// void led_strip_rgb_color_meteor_handler(void)
+// {
+// 	mode_ptr mode;
+// 	uint8_t option;
 
-	mode = &led_strip_rgb_anim_single_color_meteor;
+// 	mode = &led_strip_rgb_anim_single_color_meteor;
 
-	if (fc_effect.dream_scene.direction == IS_forward)
-	{
-		option = 0 | SIZE_XLARGE;
-	}
-	else
-	{
-		option = REVERSE | SIZE_XLARGE;
-	}
+// 	if (fc_effect.dream_scene.direction == IS_forward)
+// 	{
+// 		option = 0 | SIZE_XLARGE;
+// 	}
+// 	else
+// 	{
+// 		option = REVERSE | SIZE_XLARGE;
+// 	}
 
-	led_strip_rgb_schedule_set_mode(
-		mode,
-		fc_effect.dream_scene.speed,
-		option);
-}
+// 	led_strip_rgb_schedule_set_mode(
+// 		mode,
+// 		fc_effect.dream_scene.speed,
+// 		option);
+// }
 
 void led_strip_rgb_strand_rainbow_handler(void)
 {
@@ -180,9 +181,10 @@ void led_strip_rgb_strand_chas_light_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	speed = fc_effect.dream_scene.speed;
+	options = NO_OPTIONS;
 
 	// 正向
 	if (fc_effect.dream_scene.direction == IS_forward)
@@ -197,301 +199,301 @@ void led_strip_rgb_strand_chas_light_handler(void)
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_strand_colorful_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_multi_block_scan;
 	speed = fc_effect.dream_scene.speed;
-	option = SIZE_SMALL;
+	options = SIZE_SMALL;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_mutil_seg_grandual_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_mutil_fade;
 	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+	options = SIZE_MEDIUM;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_standard_jump_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &WS2812FX_mutil_c_jump;
 	speed = fc_effect.dream_scene.speed;
-	option = 0;
+	options = NO_OPTIONS;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_strobe_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &WS2812FX_mutil_strobe;
 	speed = fc_effect.dream_scene.speed;
-	option = 0;
+	options = NO_OPTIONS;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_multi_colors_grandual_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_multi_colors_gradual;
 	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+	options = SIZE_MEDIUM;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_tow_color_fix_flow_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &WS2812FX_mode_running_lights;
 	speed = fc_effect.dream_scene.speed;
 	if (fc_effect.dream_scene.direction == IS_forward)
 	{
-		option = 0;
+		options = 0;
 	}
 	else
 	{
-		option = REVERSE;
+		options = REVERSE;
 	}
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_single_color_flash_random_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
-	mode = &led_strip_rgb_anim_starry_sky;
+	mode = &led_strip_rgb_anim_fire_flicker_intense;
 	speed = fc_effect.dream_scene.speed;
-	option = 0;
+	options = 0;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_seg_mutil_color_flash_random_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &WS2812FX_mode_fireworks;
 	speed = fc_effect.dream_scene.speed;
-	option = 0;
+	options = 0;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_single_color_breath_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
-	mode = &WS2812FX_mode_breath;
+	mode = &led_strip_rgb_anim_breath;
 	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+	options = SIZE_MEDIUM;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_single_color_meteor_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_meteor_signle_color;
 	speed = fc_effect.dream_scene.speed;
 	if (fc_effect.dream_scene.direction == IS_forward)
 	{
-		option = 0 | FADE_XSLOW;
+		options = 0 | FADE_XSLOW;
 	}
 	else
 	{
-		option = REVERSE | FADE_XSLOW;
+		options = REVERSE | FADE_XSLOW;
 	}
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_background_meteor_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_background_meteor;
 	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+	options = SIZE_MEDIUM;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_mode_open_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_open;
 	speed = fc_effect.dream_scene.speed;
-	option = 0;
+	options = 0;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_mode_close_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_close;
 	speed = fc_effect.dream_scene.speed;
-	option = FADE_XXSLOW;
+	options = FADE_XXSLOW;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
 void led_strip_rgb_dot_running_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
-	uint8_t option;
+	uint8_t options;
 
 	mode = &led_strip_rgb_anim_multi_dot_running;
-	speed = fc_effect.dream_scene.speed;
+	speed = fc_effect.dream_scene.speed + 50;
 	if (fc_effect.dream_scene.direction == IS_forward)
 	{
-		option = SIZE_MEDIUM | 0;
+		options = SIZE_MEDIUM | 0;
 	}
 	else
 	{
-		option = SIZE_MEDIUM | REVERSE;
+		options = SIZE_MEDIUM | REVERSE;
 	}
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
 		speed,
-		option);
+		options);
 }
 
-void led_strip_rgb_meteor_jump_handler(void)
-{
-	mode_ptr mode;
-	u16 speed;
-	uint8_t option;
+// void led_strip_rgb_meteor_jump_handler(void)
+// {
+// 	mode_ptr mode;
+// 	u16 speed;
+// 	uint8_t option;
 
-	mode = &led_strip_rgb_anim_meteor_jump;
-	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+// 	mode = &led_strip_rgb_anim_meteor_jump;
+// 	speed = fc_effect.dream_scene.speed;
+// 	option = SIZE_MEDIUM;
 
-	led_strip_rgb_schedule_set_mode(
-		mode,
-		speed,
-		option);
-}
+// 	led_strip_rgb_schedule_set_mode(
+// 		mode,
+// 		speed,
+// 		option);
+// }
 
-void led_strip_rgb_meteor_gradual_handler(void)
-{
-	mode_ptr mode;
-	u16 speed;
-	uint8_t option;
+// void led_strip_rgb_meteor_gradual_handler(void)
+// {
+// 	mode_ptr mode;
+// 	u16 speed;
+// 	uint8_t option;
 
-	mode = &led_strip_rgb_anim_meteor_gradual;
-	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+// 	mode = &led_strip_rgb_anim_meteor_gradual;
+// 	speed = fc_effect.dream_scene.speed;
+// 	option = SIZE_MEDIUM;
 
-	led_strip_rgb_schedule_set_mode(
-		mode,
-		speed,
-		option);
-}
+// 	led_strip_rgb_schedule_set_mode(
+// 		mode,
+// 		speed,
+// 		option);
+// }
 
-void led_strip_rgb_rainbow_flow_handler(void)
-{
-	mode_ptr mode;
-	u16 speed;
-	uint8_t option;
+// void led_strip_rgb_rainbow_flow_handler(void)
+// {
+// 	mode_ptr mode;
+// 	u16 speed;
+// 	uint8_t option;
 
-	mode = &led_strip_rgb_anim_rainbow_flow;
-	speed = fc_effect.dream_scene.speed;
-	option = SIZE_MEDIUM;
+// 	mode = &led_strip_rgb_anim_rainbow_flow;
+// 	speed = fc_effect.dream_scene.speed;
+// 	option = SIZE_MEDIUM;
 
-	led_strip_rgb_schedule_set_mode(
-		mode,
-		speed,
-		option);
-}
+// 	led_strip_rgb_schedule_set_mode(
+// 		mode,
+// 		speed,
+// 		option);
+// }
 
 // static void led_strip_rgb_run_light_scene(void)
 // {
@@ -508,15 +510,90 @@ void led_strip_rgb_rainbow_flow_handler(void)
 // 	}
 // }
 
-void led_strip_rgb_breathing_handler(void)
+// void led_strip_rgb_breathing_handler(void)
+// {
+// 	mode_ptr mode;
+// 	u16 speed;
+// 	uint8_t options;
+
+// 	mode = &led_strip_rgb_anim_breathing;
+// 	speed = fc_effect.dream_scene.speed;
+// 	options = 0;
+
+// 	led_strip_rgb_schedule_set_mode(
+// 		mode,
+// 		speed,
+// 		options);
+// }
+
+void led_strip_rgb_single_superposition_handler(void)
 {
 	mode_ptr mode;
 	u16 speed;
 	uint8_t options;
 
-	mode = &led_strip_rgb_anim_breathing;
+	// 正向
+	if (fc_effect.dream_scene.direction == IS_forward)
+	{
+		options = 0;
+	}
+	else
+	{
+		options = REVERSE;
+	}
+
+	mode = &led_strip_rgb_anim_single_superposition;
 	speed = fc_effect.dream_scene.speed;
-	options = 0;
+
+	led_strip_rgb_schedule_set_mode(
+		mode,
+		speed,
+		options);
+}
+
+void led_strip_rgb_single_superposition_with_background_handler(void)
+{
+	mode_ptr mode;
+	u16 speed;
+	uint8_t options;
+
+	// 正向
+	if (fc_effect.dream_scene.direction == IS_forward)
+	{
+		options = 0;
+	}
+	else
+	{
+		options = REVERSE;
+	}
+
+	mode = &led_strip_rgb_anim_single_superposition_with_background;
+	speed = fc_effect.dream_scene.speed;
+
+	led_strip_rgb_schedule_set_mode(
+		mode,
+		speed,
+		options);
+}
+
+void led_strip_rgb_multi_superposition_handler(void)
+{
+	mode_ptr mode;
+	u16 speed;
+	uint8_t options;
+
+	// 正向
+	if (fc_effect.dream_scene.direction == IS_forward)
+	{
+		options = 0;
+	}
+	else
+	{
+		options = REVERSE;
+	}
+
+	mode = &led_strip_rgb_anim_multi_superposition;
+	speed = fc_effect.dream_scene.speed;
 
 	led_strip_rgb_schedule_set_mode(
 		mode,
@@ -537,101 +614,187 @@ void __led_strip_rgb_schedule_in_light_scene__(void)
 	{
 	case MODE_MUTIL_RAINBOW: // 彩虹
 		led_strip_rgb_strand_rainbow_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_rainbow_handler\n");
+#endif
 		break;
-
 	case MODE_MUTIL_JUMP: // 跳变模式
 		led_strip_rgb_multi_jump_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_multi_jump_handler\n");
+#endif
 		break;
 	case MODE_MUTIL_BRAETH: // 呼吸模式
 		led_strip_rgb_strand_breath_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_breath_handler\n");
+#endif
 		break;
-
 	case MODE_MUTIL_TWIHKLE: // 闪烁模式
 		led_strip_rgb_strand_twihkle_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_twihkle_handler\n");
+#endif
 		break;
 
 	case MODE_MUTIL_FLOW_WATER: // 流水模式
 		led_strip_rgb_strand_flow_water_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_flow_water_handler\n");
+#endif
 		break;
 
 	case MODE_CHAS_LIGHT: // 追光模式
 		led_strip_rgb_strand_chas_light_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_chas_light_handler\n");
+#endif
 		break;
 
 	case MODE_MUTIL_COLORFUL: // 炫彩模式
 		led_strip_rgb_strand_colorful_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strand_colorful_handler\n");
+#endif
 		break;
 
 	case MODE_MUTIL_SEG_GRADUAL: // 渐变模式
 		led_strip_rgb_mutil_seg_grandual_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_mutil_seg_grandual_handler\n");
+#endif
 		break;
 
 	case MODE_JUMP: // 标准跳变
 		led_strip_rgb_standard_jump_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_standard_jump_handler\n");
+#endif
 		break;
 
 	case MODE_STROBE: // 标准频闪
 		led_strip_rgb_strobe_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_strobe_handler\n");
+#endif
 		break;
 
 	case MODE_MUTIL_C_GRADUAL: // 多段同时渐变
 		led_strip_rgb_multi_colors_grandual_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_multi_colors_grandual_handler\n");
+#endif
 		break;
 
 	case MODE_2_C_FIX_FLOW: // 两种颜色混色流水
 		led_strip_rgb_tow_color_fix_flow_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_tow_color_fix_flow_handler\n");
+#endif
 		break;
 
 	case MODE_SINGLE_FLASH_RANDOM:
 		led_strip_rgb_single_color_flash_random_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_single_color_flash_random_handler\n");
+#endif
 		break;
 
 	case MODE_SEG_FLASH_RANDOM:
 		led_strip_rgb_seg_mutil_color_flash_random_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_seg_mutil_color_flash_random_handler\n");
+#endif
 		break;
 
 	case MODE_SINGLE_C_BREATH: // 单色呼吸
 		led_strip_rgb_single_color_breath_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_single_color_breath_handler\n");
+#endif
 		break;
 
 	case MODE_SINGLE_METEOR:
 		led_strip_rgb_single_color_meteor_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_single_color_meteor_handler\n");
+#endif
 		break;
 
 	case MODE_B_G_METEOR:
 		led_strip_rgb_background_meteor_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_background_meteor_handler\n");
+#endif
 		break;
 
 	case MODE_OPEN:
 		led_strip_rgb_mode_open_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_mode_open_handler\n");
+#endif
 		break;
 
 	case MODE_CLOSE:
 		led_strip_rgb_mode_close_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_mode_close_handler\n");
+#endif
 		break;
 
 	case MODE_DOT_RUNNING:
 		led_strip_rgb_dot_running_handler();
+#if USER_DEBUG_ENABLE
+		printf("MODE_DOT_RUNNING\n");
+		printf("led_strip_rgb_dot_running_handler\n");
+#endif
 		break;
 
-	case MODE_COLOR_METEOR: // 无背景颜色的流星
-		led_strip_rgb_color_meteor_handler();
+		// case MODE_COLOR_METEOR: // 无背景颜色的流星
+		// 	led_strip_rgb_color_meteor_handler();
+		// 	break;
+
+		// case MODE_JUMP_METEORR: // 跳变 效果 的流星
+		// 	led_strip_rgb_meteor_jump_handler();
+		// 	break;
+
+		// case MODE_GRADUAL_METEOR: // 渐变 效果 的流星
+		// 	led_strip_rgb_meteor_gradual_handler();
+		// 	break;
+
+		// case MODE_RAINBOW_FLOW:
+		// 	led_strip_rgb_rainbow_flow_handler();
+		// 	break;
+
+		// case MODE_BREATH:
+		// 	led_strip_rgb_breathing_handler();
+		// 	break;
+
+	case MODE_DOT_RUNNING_COLLECTIONS: // 跑动集合效果
+		led_strip_rgb_dot_running_handler();
+#if USER_DEBUG_ENABLE
+		printf("MODE_DOT_RUNNING_COLLECTIONS\n");
+		printf("led_strip_rgb_dot_running_handler\n");
+#endif
 		break;
 
-	case MODE_JUMP_METEORR: // 跳变 效果 的流星
-		led_strip_rgb_meteor_jump_handler();
+	case MODE_SINGLE_SUPERPOSITION: // 单色堆积
+		led_strip_rgb_single_superposition_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_single_superposition_handler\n");
+#endif
 		break;
-
-	case MODE_GRADUAL_METEOR: // 渐变 效果 的流星
-		led_strip_rgb_meteor_gradual_handler();
+	case MODE_B_G_SUPERPOSITION: // 带底色堆积
+		led_strip_rgb_single_superposition_with_background_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_single_superposition_with_background_handler\n");
+#endif
 		break;
-
-	case MODE_RAINBOW_FLOW:
-		led_strip_rgb_rainbow_flow_handler();
-		break;
-
-	case MODE_BREATH: 
-		led_strip_rgb_breathing_handler();
+	case MODE_MUTILE_SUPERPOSITION:
+		led_strip_rgb_multi_superposition_handler();
+#if USER_DEBUG_ENABLE
+		printf("led_strip_rgb_multi_superposition_handler\n");
+#endif
 		break;
 	}
 }
