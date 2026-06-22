@@ -67,6 +67,8 @@ typedef enum
     MODE_JUMP_METEORR = 30,        // 跳变效果的流星
     MODE_GRADUAL_METEOR = 31,      // 渐变效果的流星
     MODE_RAINBOW_FLOW = 32,
+
+    MODE_BREATH, // 呼吸，支持调节亮度，支持多种颜色（一种颜色呼吸完，切换到下一种颜色）
  
 
     // MODE_COLORFUL_LIGHTS_FLASH, // 七彩灯频闪
@@ -189,7 +191,7 @@ typedef struct
 extern volatile fc_effect_t fc_effect; // 幻彩灯串效果数据
 
 void set_fc_effect(void);
-void base_Dynamic_Effect(u8 tp_num);
+// void base_Dynamic_Effect(u8 tp_num);
 
 void ls_set_color(uint8_t n, uint32_t c);  // 设置fc_effect.dream_scene.rgb的颜色池
 void ls_set_colors(uint8_t n, color_t *c); // 设置段的颜色

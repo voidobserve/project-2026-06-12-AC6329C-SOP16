@@ -4,11 +4,29 @@
 
 #include "../../../apps/user_app/ws2812-fx-lib/WS2812FX_C/WS2812FX.H"
 #include "user_include.h"
+#include "led_strip_white_schedule.h"
 
 static volatile u8 flag_sound_triggered_in_colorful_lights = 0; // 标志位，七彩灯触发声控。0--未触发，1--触发
 static volatile u8 flag_sound_triggered_in_meteor_lights = 0;   // 标志位，流星灯触发声控。0--未触发，1--触发
 
 static volatile u8 flag_sound_triggered_in_motor = 0; // 标志位，电机声控模式下，触发声控，0--未触发，1--触发
+
+static volatile u8 flag_sound_triggered_in_led_strip_white = 0; // 纯白色流星灯使用到的声控触发标志位
+static volatile u8 flag_sound_triggered_in_led_strip_rgb = 0;   // RGB 幻彩灯使用到的声控触发标志位
+
+u8 get_sound_triggered_by_led_strip_white(void)
+{
+    u8 ret = flag_sound_triggered_in_led_strip_white;
+    flag_sound_triggered_in_led_strip_white = 0;
+    return ret;
+}
+
+u8 get_sound_triggered_by_led_strip_rgb(void)
+{
+    u8 ret = flag_sound_triggered_in_led_strip_rgb;
+    flag_sound_triggered_in_led_strip_rgb = 0;
+    return ret;
+}
 
 // 获取七彩灯的声控结果
 u8 get_sound_triggered_by_colorful_lights(void)
@@ -169,11 +187,6 @@ void sound_handle(void)
 
 #if 1 // 移植其他项目的声控程序
 
-    // if (fc_effect.on_off_flag != DEVICE_ON)
-    // {
-    //     return;
-    // }
-
 #define SAMPLE_N 20
     static volatile u32 adc_sum = 0;
     static volatile u32 adc_sum_n = 0;
@@ -191,14 +204,13 @@ void sound_handle(void)
     // 记录adc值
     adc = check_mic_adc(); // 每次进入，采集一次ad值（即使不在声控模式，也会占用一些时间）
 
-    // printf("adc = %d", adc);
+    // printf("adc == %u\n", adc);
 
     if (adc >= 1000)
     {
         return;
     }
 
-    // if (adc < 1000) // 当ADC值大于1000，说明硬件电路有问题
     if (adc_sum_n < 2000)
     {
         // 从0开始，一直加到2000，每10ms加一，总共要20s
@@ -208,7 +220,7 @@ void sound_handle(void)
     if (adc_sum_n == 2000)
     {
         if (adc / (adc_sum / adc_sum_n) > 3)
-            return; // adc突变，大于平均值的3倍，丢弃改值
+            return; // adc突变，大于平均值的3倍，丢弃该值
 
         adc_sum = adc_sum - adc_sum / adc_sum_n;
     }
@@ -248,46 +260,45 @@ void sound_handle(void)
         if (adc * fc_effect.music.s / 100 > adc_sum / adc_sum_n)
         {
             u32 adc_sum_avrg = adc_sum / adc_sum_n;
-            if (adc * fc_effect.colorful_lights_sensitivity / 100 > adc_sum_avrg)
-            {
 
-                if (fc_effect.on_off_flag == DEVICE_ON &&
+            if (adc * led_strip_white.sensitivity / 100 > adc_sum_avrg)
+            {
+                // 如果流星灯在声控模式，并且触发了声控
+                if (DEVICE_ON == led_strip_white.is_dev_open &&
+                    (15 == led_strip_white.mode_index ||
+                     16 == led_strip_white.mode_index))
+                {
+                    // 如果流星灯处于声控模式，会进入这里
+                    flag_sound_triggered_in_led_strip_white = 1;
+                    WS2812FX_triggered_by_led_strip_white();
+                }
+
+                if (DEVICE_ON == fc_effect.on_off_flag &&
                     fc_effect.Now_state == IS_light_music)
                 {
                     // 如果七彩灯处于声控模式，会进入这里
-                    flag_sound_triggered_in_colorful_lights = 1;
-                    WS2812FX_triggered_by_colorful_lights();
-
-                    // printf("trigger_by_colorful_lights\n");
+                    flag_sound_triggered_in_led_strip_rgb = 1;
+                    // WS2812FX_triggered_by_colorful_lights();
+                    WS2812FX_triggered_by_led_strip_rgb();
                 }
             }
 
-            if (adc * fc_effect.base_ins.sensitivity / 100 > adc_sum_avrg)
+            if (adc > adc_sum_avrg)
             {
-                if (fc_effect.on_off_flag == DEVICE_ON &&
-                    MOTOR_MODE_MUSIC_RULATION == fc_effect.base_ins.mode)
+                if (fc_effect.Now_state == IS_light_music &&
+                    fc_effect.music.m == 2)
                 {
-                    flag_sound_triggered_in_motor = 1;
-                }
-            }
-
-            if (adc * fc_effect.meteor_lights_sensitivity / 100 > adc_sum_avrg)
-            {
-                // 如果流星灯在声控模式，并且触发了声控
-                if (DEVICE_ON == fc_effect.star_on_off &&
-                    (15 == fc_effect.star_index ||
-                     16 == fc_effect.star_index))
-                {
-                    // 如果流星灯处于声控模式，会进入这里
-                    // music_voic.meteor_trg = 1; // 流星声控
-                    flag_sound_triggered_in_meteor_lights = 1;
-
-                    WS2812FX_triggered_by_meteor_lights();
+                    /*
+                        处于声控模式，并且正在跑
+                        led_strip_rgb_anim_sound_control_feq_rise 模式(动画)
+                    */
+                    __led_strip_rgb_anim_sound_control_feq_rise_set__(
+                        (adc - adc_sum_avrg) * 100 * fc_effect.music.s /
+                        100 / adc_sum_avrg);
                 }
             }
         }
     }
-    // } // if (adc < 1000) // 当ADC值大于1000，说明硬件电路有问题
 
 #endif // 移植其他项目的声控程序
 }

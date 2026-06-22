@@ -3,6 +3,12 @@
 #include "led_strip_rgb_schedule.h"
 #include "led_strip_driver.h"
 
+volatile music_fs_t m_fs = {
+	.rise_tag = 40,
+	.bgc = GRAY,
+	.act = E_TOP,
+};
+
 // 单色流星
 /**
  * @brief
@@ -254,6 +260,130 @@ uint16_t led_strip_rgb_anim_mutil_breath(void)
 	}
 
 	return _seg->speed;
+}
+
+u16 led_strip_rgb_anim_breathing(void)
+{
+	// static u32 last_sys_time = 0;
+	// extern u32 sys_time_get(void);
+
+	static u32 dest_color = BLACK; // 目标颜色
+	/*
+		每个步骤用时至少10ms，因为ws2812fx_service() 10ms调用一次
+
+		从 0 到 511，
+		步长为1，共512个步骤，至少 5120 ms 完成一次循环
+		步长为2，共256个步骤，至少 2560 ms 完成一次循环
+
+		那么速度值与循环的关系
+		一次循环的时间 == 步骤 * 10ms
+		一次循环的时间 == 512 / 步长 * 10ms
+		速度值 == 512 / 步长 * 10ms
+		步长 == 512 * 10ms / 速度值
+
+
+		如果是从 0 到 指定亮度(brightness)
+		步长为1，共 brightness + 1 步，至少 brightness * 10 ms 完成一次循环
+		步长为2，共 (brightness + 1) / 2 步，至少 brightness * 10 ms / 2 完成一次循环
+
+		速度值与亮度值的关系
+		一次循环的时间 == (brightness + 1) / 步长 * 10ms
+		速度值 == (brightness + 1) / 步长 * 10ms
+		(brightness + 1) / 步长 == 速度值 / 10ms
+		(brightness + 1) == 速度值 / 10ms * 步长
+		步长 == (brightness + 1) * 10ms / 速度值
+	*/
+	// u16 step = 0; // 步长
+	// step = 512 * 10 / _seg->speed;
+
+	static volatile u32 temp_step = 0;	// 累计放大了1000倍的步长，超过1000后，才执行动画的下一步骤
+	static volatile u16 brightness = 0; // 亮度值
+	u32 step = 0;						// 步长（放大了1000倍）
+	// step = ((u32)fc_effect.b + 1) * 10 * 1000 / _seg->speed;
+	step = ((u32)fc_effect.b + 1) * 10 * 1000 / fc_effect.dream_scene.speed;
+	// step = ((u32)fc_effect.b - 1) * 10 * 10000 / _seg->speed; // （放大了10000倍）
+
+	if (0 == _seg_rt->counter_mode_step &&
+		0 == _seg_rt->aux_param &&
+		0 == _seg_rt->counter_mode_call)
+	{
+		/*
+			如果是第一次进入，设置默认颜色
+			当前颜色为黑色，向目标颜色渐变（看起来像呼吸渐亮）
+		*/
+		dest_color = _seg->colors[_seg_rt->aux_param];
+		// dest_color = WS2812FX_color_blend(BLACK, _seg->colors[_seg_rt->aux_param], (u8)fc_effect.b);
+		brightness = 0;
+		temp_step = 0;
+		// Adafruit_NeoPixel_fill(BLACK, _seg->start, _seg_len);
+	}
+
+	temp_step += step;
+	if (temp_step >= 1000)
+	{
+		// 有可能单次的步长会超过1000，这里用循环来逐个递减
+		while (1)
+		{
+			if (temp_step < 1000)
+			{
+				break;
+			}
+
+			/*
+				没有固定最大亮度的呼吸：
+				brightness 变化范围： 0 -> brightness -> 0
+			*/
+			_seg_rt->counter_mode_step++;
+			if (temp_step >= 1000)
+			{
+				temp_step -= 1000;
+			}
+			else
+			{
+				temp_step = 0;
+			}
+
+			brightness = _seg_rt->counter_mode_step;
+			if (brightness > (u16)fc_effect.b)
+			{
+				brightness = ((u16)fc_effect.b * 2) - brightness;
+			}
+
+			/*
+				0 -> fc_effect.b，共 fc_effect.b 个步骤，灯光渐亮
+				fc_effect.b -> 0，共 fc_effect.b 个步骤，灯光渐暗
+			*/
+			if (_seg_rt->counter_mode_step >= ((u32)fc_effect.b * 2))
+			{
+				_seg_rt->counter_mode_step = 0;
+				temp_step = 0;
+				brightness = 0;
+
+				_seg_rt->aux_param += 1; // 切换颜色数组 _seg->colors[] 中的下一个颜色
+				if (_seg_rt->aux_param >= _seg->c_n)
+				{
+					_seg_rt->aux_param = 0;
+				}
+
+				dest_color = _seg->colors[_seg_rt->aux_param];
+				// Adafruit_NeoPixel_fill(BLACK, _seg->start, _seg_len); // 防止动画最后没有熄灭灯光
+				// dest_color = WS2812FX_color_blend(BLACK, _seg->colors[_seg_rt->aux_param], (u8)fc_effect.b);
+
+				// printf("__LINE__ %d\n", __LINE__);
+				SET_CYCLE;
+			}
+		}
+	}
+
+	u32 color = WS2812FX_color_blend(BLACK, dest_color, (u8)brightness);
+	Adafruit_NeoPixel_fill(color, _seg->start, _seg_len);
+
+	// printf("brightness %u\n", (u16)brightness); //
+	// printf("temp_step %lu\n", (u32)temp_step);  // 打印为0
+	// printf("step %lu\n", (u32)step);
+	// printf("_seg_rt->counter_mode_step %lu\n", (u32)_seg_rt->counter_mode_step);
+
+	return 1; // ws2812fx_service() 10ms调用一次，这个值只需要小于10
 }
 
 uint16_t led_strip_rgb_anim_mutil_twihkle(void)
@@ -1146,4 +1276,238 @@ u16 led_strip_rgb_anim_when_adjust_sequence(void)
 		_seg_rt->counter_mode_step++;
 	}
 	return 1000;
+}
+
+// 星空效果，由声控信号触发，更多星星，闪烁速度更快
+u16 led_strip_rgb_anim_sound_control_star(void)
+{
+	static u16 sp_en;
+	static u16 en_cnt;
+
+	uint8_t j = 2;
+	// if (music_s_m == 0)
+	_seg->colors[0] = WS2812FX_color_wheel(WS2812FX_random8());
+	// if (music_s_m == 1)
+	// 	_seg->colors[0] = WHITE;
+	// if (music_s_m == 2)
+	// 	_seg->colors[0] = BLUE;
+	uint8_t w = (_seg->colors[0] >> 24) & 0xFF;
+	uint8_t r = (_seg->colors[0] >> 16) & 0xFF;
+	uint8_t g = (_seg->colors[0] >> 8) & 0xFF;
+	uint8_t b = (_seg->colors[0] & 0xFF);
+	uint8_t lum = max(w, max(r, max(g, b))) / 2;
+
+	if (__LED_STRIP_RGB_GET_SOUND_TRIGGER__())
+	{
+		sp_en = get_max_sp();
+		_seg_rt->aux_param++;
+		if (_seg_rt->aux_param > 3) // 加速持续时间
+		{
+			_seg_rt->aux_param = 0;
+		}
+	}
+	else
+	{
+		sp_en = 500;
+	}
+
+	en_cnt += 10;
+	if (en_cnt >= sp_en)
+	// if(en_cnt >= music_star_sp)
+	{
+		en_cnt = 0;
+		WS2812FX_fade_out();
+		for (uint16_t i = 0; i <= j; i++)
+		{
+			int flicker = WS2812FX_random8_lim(lum);
+			WS2812FX_setPixelColor_rgbw(WS2812FX_random16_lim(_seg_len), max(r - flicker, 0), max(g - flicker, 0), max(b - flicker, 0), max(w - flicker, 0));
+		}
+	}
+
+	SET_CYCLE;
+	return (10);
+}
+
+// 彩虹闪烁，有声音两彩虹，没声音灭
+uint16_t led_strip_rgb_anim_sound_control_rainbow_flash(void)
+{
+	uint16_t i;
+	static volatile u8 cnt = 0; // 有声控信号，添加超时时间，超时时间结束前都执行声控对应的动画
+
+	if (__LED_STRIP_RGB_GET_SOUND_TRIGGER__())
+	{
+		// 有声控信号，接下来一段时间都执行声控对应的动画
+		if (cnt < 10)
+		{
+			cnt++;
+		}
+	}
+	else
+	{
+		// 没有声控信号，并且处理声控对应的操作已经超时
+		if (0 == cnt)
+		{
+			Adafruit_NeoPixel_fill(GRAY, _seg->start, _seg_len);
+		}
+	}
+
+	if (cnt)
+	{
+		cnt--;
+
+		for (i = 0; i < _seg_len; i++)
+		{
+			uint32_t color = WS2812FX_color_wheel(((i * 256 / _seg_len) + _seg_rt->counter_mode_step) & 0xFF);
+			WS2812FX_setPixelColor(i, color);
+		}
+	}
+
+	_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 2) & 0xFF;
+	if (_seg_rt->counter_mode_step == 0)
+	{
+		SET_CYCLE;
+	}
+	return (get_max_sp());
+}
+
+void __led_strip_rgb_anim_sound_control_feq_rise_init__(void)
+{
+	m_fs.act = E_RISE;
+	m_fs.rise_tag = 0; // 默认可能是40，需要结合实际情况测试
+	m_fs.c_pos = 0;
+	m_fs.fall_sp = 0;
+	m_fs.top_pos = 0;
+	m_fs.top_sp = 0;
+	m_fs.bgc = GRAY;
+}
+
+void __led_strip_rgb_anim_sound_control_feq_rise_set__(u8 percent)
+{
+	m_fs.rise_tag = percent * _seg_len / 30;
+}
+
+// 频谱，生长效果，到达最高位置，顶点变成白色，慢慢下降
+uint16_t led_strip_rgb_anim_sound_control_feq_rise(void)
+{
+	uint8_t i;
+	uint32_t color_top, color;
+
+	if (0 == _seg_rt->counter_mode_call)
+	{
+		// 刚进入声控，初始化参数
+		__led_strip_rgb_anim_sound_control_feq_rise_init__();
+	}
+
+	if (m_fs.rise_tag > _seg_len)
+		m_fs.rise_tag = _seg_len;
+
+	for (i = 0; i < m_fs.c_pos; i++) // 上升点亮灯带
+	{
+		color = WS2812FX_color_wheel(((i * 256 / _seg_len) + _seg_rt->counter_mode_step) & 0xFF);
+		WS2812FX_setPixelColor(i, color);
+		// if(m_fs.top_pos<i)    //点亮顶端白点
+		// WS2812FX_setPixelColor( i+1, WHITE);
+	}
+
+	_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) & 0xFF;
+	if (_seg_rt->counter_mode_step == 0)
+		SET_CYCLE;
+
+	if (m_fs.act == E_RISE)
+	{
+		if (m_fs.c_pos < m_fs.rise_tag - 1) //-1是留一个点位置给顶端显示白点
+		{
+			m_fs.c_pos++;
+		}
+		else // 到达顶端
+		{
+			m_fs.act = E_TOP;
+			if (m_fs.c_pos > m_fs.top_pos) // 刷新顶端值
+			{
+				m_fs.top_pos = m_fs.c_pos;
+				color_top = color;
+			}
+			m_fs.rise_tag = 0;
+		}
+	}
+	else
+	{
+		if (m_fs.fall_sp >= 3)
+		{
+			m_fs.fall_sp = 0;
+			if (m_fs.c_pos > 0)
+				m_fs.c_pos--;
+			WS2812FX_setPixelColor(m_fs.c_pos, 0);
+		}
+		m_fs.fall_sp++;
+	}
+
+	if (m_fs.rise_tag >= m_fs.c_pos && m_fs.rise_tag > 0)
+	{
+		m_fs.act = E_RISE;
+	}
+	else
+	{
+		m_fs.act = E_TOP;
+	}
+
+	if (m_fs.top_pos >= m_fs.c_pos)
+	{
+		if (m_fs.top_sp >= 10)
+		{
+			WS2812FX_setPixelColor(m_fs.top_pos + 2, BLACK);
+			WS2812FX_setPixelColor(m_fs.top_pos + 1, color_top);
+			WS2812FX_setPixelColor(m_fs.top_pos, color_top);
+			m_fs.top_sp = 0;
+			m_fs.top_pos--;
+		}
+		m_fs.top_sp++;
+	}
+
+	return (get_max_sp());
+}
+
+// 彩虹色滚动，音乐触发加速
+uint16_t led_strip_rgb_anim_sound_control_music_energy(void)
+{
+	static volatile uint16_t sp_en;
+	static volatile uint16_t en_cnt;
+	for (uint16_t i = 0; i < _seg_len; i++)
+	{
+		uint32_t color = WS2812FX_color_wheel(((i * 256 / _seg_len) + _seg_rt->counter_mode_step) & 0xFF);
+		WS2812FX_setPixelColor(_seg->stop - i, color);
+	}
+
+	if (__LED_STRIP_RGB_GET_SOUND_TRIGGER__())
+	{
+		if (en_cnt < 10)
+		{
+			en_cnt++;
+		}
+
+		sp_en = get_max_sp();
+		_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 20) & 0xFF;
+	}
+	else
+	{
+		if (en_cnt > 0)
+		{
+			en_cnt--;
+		}
+
+		if (en_cnt == 0)
+		{
+			sp_en = 30;
+			_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) & 0xFF;
+		}
+	}
+
+	return (sp_en);
+}
+
+// RGB 关闭时，对应的动画
+u16 led_strip_rgb_anim_pwr_off(void)
+{
+	Adafruit_NeoPixel_fill(BLACK, _seg->start, _seg_len);
+	return 100;
 }

@@ -2,6 +2,8 @@
 #include "led_strand_effect.h"
 #include "save_flash.h" // 包含读写flash的接口
 #include "ws2812fx_effect.h"
+#include "led_strip_rgb_app.h"
+#include "report.h"
 
 #include "user_include.h"
 
@@ -177,6 +179,10 @@ void rf24_key_handle(void)
         return;
     }
 
+#if USER_DEBUG_ENABLE
+    // printf("rf24g_key_event == %u\n", (u16)rf24g_key_event);
+#endif
+
     rf24g_key_handle_func_ptr = rf24_28keys_handle_func_buff[rf24g_key_event];
 
     if (NULL == rf24g_key_handle_func_ptr)
@@ -193,15 +199,15 @@ void rf24_key_handle(void)
 
 // =============================================================================
 
-void rf24g_28keys_event_r1c1_click_handle(void)
+void rf24g_28keys_event_r2c1_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    printf("28keys event r1c1\n");
+    printf("28keys event r2c1\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
     {
-        // 七彩灯没有打开，直接返回
+        // 灯没有打开，直接返回
         return;
     }
 
@@ -217,28 +223,17 @@ void rf24g_28keys_event_r1c1_click_handle(void)
             fc_effect.app_b = 100;
         }
 
-        /*
-            七彩灯的亮度值范围： 0 ~ 255 ，
-            但是只用到 25（255的10%） ~ 255，
-            这里通过计算，将 fc_effect.app_b 的 0 ~ 100 映射到 25 ~ 255
-        */
-        // fc_effect.b = (u16)fc_effect.app_b * (255 - 25) / 100 + 25;
-        colorful_lights_set_brightness(fc_effect.app_b);
+        led_strip_rgb_set_brightness(fc_effect.app_b);
         WS2812FX_setBrightness(fc_effect.b);
+        report_brightness(fc_effect.app_b);
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_b %u\n", (u16)fc_effect.app_b);
         printf("fc_effect.b %u\n", (u16)fc_effect.b);
 #endif
-        fb_bright();
     }
-    else if (IS_light_scene == fc_effect.Now_state && // 七彩灯的动态模式
-             (MODO_COLORFUL_LIGHTS_FLASH == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_BREATH == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_GRADUAL == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_JUMP == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_AUTO == fc_effect.dream_scene.change_type))
+    else if (IS_light_scene == fc_effect.Now_state)
     {
-        // 七彩灯动态模式下，调节速度
+        // 动态模式下，调节速度
         // 注意：速度值是越小越快
         const u8 step = 10;
         if (fc_effect.app_speed < 100 - step)
@@ -250,48 +245,50 @@ void rf24g_28keys_event_r1c1_click_handle(void)
             fc_effect.app_speed = 100;
         }
 
-        /*
-            MODO_COLORFUL_LIGHTS_FLASH ~ MODE_COLORFUL_LIGHTS_AUTO 模式中，速度值范围：0 ~ 2000
-            一般只用 200 ~ 2000 这个范围，
-            这里通过计算将 fc_effect.dream_scene.speed 的值限制在 200 ~ 2000
+        led_strip_rgb_set_speed(fc_effect.app_speed);
+        led_strip_rgb_schedule();
+        report_speed(fc_effect.app_speed);
 
-            MODO_COLORFUL_LIGHTS_FLASH ~ MODE_COLORFUL_LIGHTS_AUTO 模式中，速度值范围：0 ~ 5000
-            一般只用 200 ~ 5000 这个范围，
-            这里通过计算将 fc_effect.dream_scene.speed 的值限制在 200 ~ 5000
-        */
-        // fc_effect.dream_scene.speed = 2000 - ((u32)fc_effect.app_speed * (2000 - 200) / 100);
-        // fc_effect.dream_scene.speed = 5000 - ((u32)fc_effect.app_speed * (5000 - 200) / 100);
-        colorful_lights_set_speed(fc_effect.app_speed);
 #if USER_DEBUG_ENABLE
-        // printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
-        // printf("fc_effect.dream_scene.speed %u\n", (u16)fc_effect.dream_scene.speed);
+        printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
+        printf("fc_effect.dream_scene.speed %u\n", (u16)fc_effect.dream_scene.speed);
 #endif
-
-        fb_speed();
     }
-    else if (IS_light_music == fc_effect.Now_state)
+    else if (IS_light_music == fc_effect.Now_state ||
+             (DEVICE_ON == led_strip_white.is_dev_open &&
+              (15 == led_strip_white.mode_index ||
+               16 == led_strip_white.mode_index)))
     {
-        // 七彩灯声控模式下，调节灵敏度
-        colorful_lights_sound_sensitivity_add();
-        fc_effect.music.s = fc_effect.colorful_lights_sensitivity;
-        fb_sensitive(); // 向app反馈灵敏度
+        // RGB幻彩灯处于声控模式，或者是纯白色流星灯处于声控模式
+        const u8 step = 10;
+        if (fc_effect.music.s < 100 - step)
+        {
+            fc_effect.music.s += step;
+        }
+        else
+        {
+            fc_effect.music.s = 100;
+        }
+
+        led_strip_white.sensitivity = fc_effect.music.s;
+        report_sound_control_sensitivity(fc_effect.music.s);
     }
     else
     {
-        // 其他模式，直接退出，不执行后续的读写flash操作
+        // 其他模式，直接退出
         return;
     }
 }
 
-void rf24g_28keys_event_r1c2_click_handle(void)
+void rf24g_28keys_event_r2c2_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    printf("28keys event r1c2\n");
+    printf("28keys event r2c2\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
     {
-        // 七彩灯没有打开，直接返回
+        // 灯没有打开，直接返回
         return;
     }
 
@@ -308,29 +305,17 @@ void rf24g_28keys_event_r1c2_click_handle(void)
             fc_effect.app_b = 0;
         }
 
-        /*
-            七彩灯的亮度值范围： 0 ~ 255 ，
-            但是只用到 25（255的10%） ~ 255，
-            这里通过计算，将 fc_effect.app_b 的 0 ~ 100 映射到 25 ~ 255
-        */
-        // fc_effect.b = (u16)fc_effect.app_b * (255 - 25) / 100 + 25;
-        colorful_lights_set_brightness(fc_effect.app_b);
+        led_strip_rgb_set_brightness(fc_effect.app_b);
         WS2812FX_setBrightness(fc_effect.b);
+        report_brightness(fc_effect.app_b);
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_b %u\n", (u16)fc_effect.app_b);
         printf("fc_effect.b %u\n", (u16)fc_effect.b);
 #endif
-
-        fb_bright();
     }
-    else if (IS_light_scene == fc_effect.Now_state && // 七彩灯的动态模式
-             (MODO_COLORFUL_LIGHTS_FLASH == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_BREATH == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_GRADUAL == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_JUMP == fc_effect.dream_scene.change_type ||
-              MODE_COLORFUL_LIGHTS_AUTO == fc_effect.dream_scene.change_type))
+    else if (IS_light_scene == fc_effect.Now_state)
     {
-        // 七彩灯动态模式下，调节速度
+        // 动态模式下，调节速度
         // 注意：速度值是越小越快
         const u8 step = 10;
         if (fc_effect.app_speed > 0 + step)
@@ -342,316 +327,45 @@ void rf24g_28keys_event_r1c2_click_handle(void)
             fc_effect.app_speed = 0;
         }
 
-        /*
-            MODO_COLORFUL_LIGHTS_FLASH ~ MODE_COLORFUL_LIGHTS_AUTO 模式中，速度值范围：0 ~ 2000
-            一般只用 200 ~ 2000 这个范围，
-            这里通过计算将 fc_effect.dream_scene.speed 的值限制在 200 ~ 2000
+        led_strip_rgb_set_speed(fc_effect.app_speed);
+        led_strip_rgb_schedule();
+        report_speed(fc_effect.app_speed);
 
-            MODO_COLORFUL_LIGHTS_FLASH ~ MODE_COLORFUL_LIGHTS_AUTO 模式中，速度值范围：0 ~ 5000
-            一般只用 200 ~ 5000 这个范围，
-            这里通过计算将 fc_effect.dream_scene.speed 的值限制在 200 ~ 5000
-        */
-        // fc_effect.dream_scene.speed = 2000 - ((u32)fc_effect.app_speed * (2000 - 200) / 100);
-        // fc_effect.dream_scene.speed = 5000 - ((u32)fc_effect.app_speed * (5000 - 200) / 100);
-        colorful_lights_set_speed(fc_effect.app_speed);
 #if USER_DEBUG_ENABLE
-        // printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
-        // printf("fc_effect.dream_scene.speed %u\n", (u16)fc_effect.dream_scene.speed);
+        printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
+        printf("fc_effect.dream_scene.speed %u\n", (u16)fc_effect.dream_scene.speed);
 #endif
-
-        fb_speed();
     }
-    else if (IS_light_music == fc_effect.Now_state)
+    else if (IS_light_music == fc_effect.Now_state ||
+             (DEVICE_ON == led_strip_white.is_dev_open &&
+              (15 == led_strip_white.mode_index ||
+               16 == led_strip_white.mode_index)))
     {
-        // 七彩灯声控模式下，调节灵敏度
-        colorful_lights_sound_sensitivity_sub();
-        fc_effect.music.s = fc_effect.colorful_lights_sensitivity;
-        fb_sensitive(); // 向app反馈灵敏度
+        // RGB幻彩灯处于声控模式，或者是纯白色流星灯处于声控模式
+        const u8 step = 10;
+        if (fc_effect.music.s > step)
+        {
+            fc_effect.music.s -= step;
+        }
+        else
+        {
+            fc_effect.music.s = 0;
+        }
+
+        led_strip_white.sensitivity = fc_effect.music.s;
+        report_sound_control_sensitivity(fc_effect.music.s);
     }
     else
     {
-        // 其他模式，直接退出，不执行后续的读写flash操作
+        // 其他模式，直接退出
         return;
     }
-}
-
-void rf24g_28keys_event_r1c3_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    printf("28keys event r1c3\n");
-#endif
-    // 只关 七彩灯 和 电机
-    colorful_light_close();
-    fb_led_on_off_state(); // 与app同步开关状态
-    fc_effect.star_on_off = DEVICE_OFF;
-    WS2812FX_stop();
-    WS2812FX_setSegment_colorOptions(
-        1,                     // 第0段
-        1,                     // 起始位置
-        fc_effect.led_num - 1, // 结束位置
-        &close_metemor,        // 效果
-        0,                     // 颜色
-        fc_effect.star_speed,  // 速度
-        0);                    // 选项，这里像素点大小：3 REVERSE决定方向
-    // WS2812FX_start();
-    WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
-    WS2812FX_running_flag_set();
-
-    motor_close();
-    fb_motor_mode();  // 向app反馈电机的模式
-    fb_motor_speed(); // 向app反馈电机转速
-    fd_meteor_on_off(); // 向app反馈流星灯的开关机状态
-}
-
-void rf24g_28keys_event_r1c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    printf("28keys event r1c4\n");
-#endif
-
-    // 七彩灯 和 电机
-    colorful_light_open();
-    fb_led_on_off_state(); // 与app反馈七彩灯的开关状态
-    // 流星灯
-    fc_effect.star_on_off = DEVICE_ON;
-    ls_meteor_stat_effect();
-
-    motor_open();
-    fb_motor_mode();  // 向app反馈电机的模式
-    fb_motor_speed(); // 向app反馈电机转速
-    fd_meteor_on_off(); // 向app反馈流星灯的开关机状态
-}
-
-void rf24g_28keys_event_r2c1_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r2c1\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    colorful_lights_set_static_color(RED);
-}
-
-void rf24g_28keys_event_r2c2_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r2c2\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    colorful_lights_set_static_color(GREEN);
 }
 
 void rf24g_28keys_event_r2c3_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    // printf("28keys event r2c3\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    colorful_lights_set_static_color(BLUE);
-}
-
-void rf24g_28keys_event_r2c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r2c4\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    // 纯白色
-    color_t color_structure = {0};
-    color_structure.r = 0x00;
-    color_structure.g = 0x00;
-    color_structure.b = 0x00;
-    // color_structure.w = 0xFF;
-    colorful_lights_set_static_mode(color_structure);
-}
-
-void rf24g_28keys_event_r3c1_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r3c1\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    // 橙色
-    colorful_lights_set_static_color(ORANGE);
-}
-
-void rf24g_28keys_event_r3c2_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r3c2\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    // 黄色
-    colorful_lights_set_static_color(YELLOW);
-}
-
-void rf24g_28keys_event_r3c3_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r3c3\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    color_t color_structure = {0};
-    color_structure.r = 0;
-    color_structure.g = 255;
-    color_structure.b = 120;
-    // color_structure.w = 0;
-    colorful_lights_set_static_mode(color_structure);
-}
-
-void rf24g_28keys_event_r3c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r3c4\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    color_t color_structure = {0};
-    color_structure.r = 255;
-    color_structure.g = 255;
-    color_structure.b = 255;
-    // color_structure.w = 0;
-    colorful_lights_set_static_mode(color_structure);
-}
-
-void rf24g_28keys_event_r4c1_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r4c1\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    color_t color_structure = {0};
-    color_structure.r = 36;
-    color_structure.g = 74;
-    color_structure.b = 158;
-    // color_structure.w = 0;
-    colorful_lights_set_static_mode(color_structure);
-
-    // // 七彩跳变
-    // ls_set_color(0, BLUE);
-    // ls_set_color(1, GREEN);
-    // ls_set_color(2, RED);
-    // ls_set_color(3, WHITE);
-    // ls_set_color(4, YELLOW);
-    // ls_set_color(5, CYAN);
-    // ls_set_color(6, PURPLE);
-    // fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_JUMP;
-    // fc_effect.dream_scene.c_n = 7;
-    // fc_effect.Now_state = IS_light_scene;
-    // WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-    // set_fc_effect();
-}
-
-void rf24g_28keys_event_r4c2_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r4c2\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    color_t color_structure = {0};
-    color_structure.r = 228;
-    color_structure.g = 0;
-    color_structure.b = 127;
-    // color_structure.w = 0;
-    colorful_lights_set_static_mode(color_structure);
-
-    // // 七彩渐变
-    // ls_set_color(0, BLUE);
-    // ls_set_color(1, GREEN);
-    // ls_set_color(2, RED);
-    // ls_set_color(3, WHITE);
-    // ls_set_color(4, YELLOW);
-    // ls_set_color(5, CYAN);
-    // ls_set_color(6, PURPLE);
-    // fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_GRADUAL;
-    // fc_effect.dream_scene.c_n = 7;
-    // fc_effect.Now_state = IS_light_scene;
-    // WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-    // set_fc_effect();
-}
-
-void rf24g_28keys_event_r4c3_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r4c3\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 七彩灯没有打开，直接返回
-        return;
-    }
-
-    color_t color_structure = {0};
-    color_structure.r = 233;
-    color_structure.g = 70;
-    color_structure.b = 60;
-    // color_structure.w = 0;
-    colorful_lights_set_static_mode(color_structure);
-}
-
-void rf24g_28keys_event_r4c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r4c4\n");
+    printf("28keys event r2c3\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
@@ -663,19 +377,53 @@ void rf24g_28keys_event_r4c4_click_handle(void)
     // 使用固定的声控模式：
     fc_effect.Now_state = IS_light_music;
     fc_effect.music.m = 1; // 设置 声控模式索引
-    set_fc_effect();
-
-    // // 自动模式 七彩跳变->七彩渐变->七彩呼吸->七彩跳变-> ......
-    // fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_AUTO;
-    // fc_effect.Now_state = IS_light_scene;
-    // WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-    // set_fc_effect();
+    led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r5c1_click_handle(void)
+void rf24g_28keys_event_r2c4_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    // printf("28keys event r5c1\n");
+    printf("28keys event r2c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 没有打开 -> 打开它
+#if USER_DEBUG_ENABLE
+        printf("light open\n");
+#endif
+
+        fc_effect.on_off_flag = DEVICE_ON;
+        led_strip_rgb_schedule();
+
+        led_strip_white.is_dev_open = 1;
+        led_strip_white_schedule();
+
+        report_dev_on_off_state(fc_effect.on_off_flag);
+        report_meteor_on_off_status(led_strip_white.is_dev_open);
+    }
+    else
+    {
+// 已经打开 -> 关闭它
+#if USER_DEBUG_ENABLE
+        printf("light close\n");
+#endif
+
+        fc_effect.on_off_flag = DEVICE_OFF;
+        led_strip_rgb_schedule();
+
+        led_strip_white.is_dev_open = 0;
+        led_strip_white_schedule();
+
+        report_dev_on_off_state(fc_effect.on_off_flag);
+        report_meteor_on_off_status(led_strip_white.is_dev_open);
+    }
+}
+
+void rf24g_28keys_event_r3c1_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r3c1\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
@@ -684,10 +432,127 @@ void rf24g_28keys_event_r5c1_click_handle(void)
         return;
     }
 
-    // // 声控 渐变
-    // fc_effect.Now_state = IS_light_music;
-    // fc_effect.music.m = 0; // 设置 声控模式索引
-    // set_fc_effect();
+    led_strip_rgb_set_static_color(RED);
+}
+
+void rf24g_28keys_event_r3c2_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r3c2\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    led_strip_rgb_set_static_color(GREEN);
+}
+
+void rf24g_28keys_event_r3c3_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r3c3\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    led_strip_rgb_set_static_color(BLUE);
+}
+
+void rf24g_28keys_event_r3c4_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r3c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    // 混白色
+    color_t color_structure = {0};
+    color_structure.r = 255;
+    color_structure.g = 255;
+    color_structure.b = 255;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r4c1_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r4c1\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 235;
+    color_structure.g = 84;
+    color_structure.b = 5;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r4c2_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r4c2\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 60;
+    color_structure.g = 176;
+    color_structure.b = 53;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r4c3_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r4c3\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 1;
+    color_structure.g = 145;
+    color_structure.b = 216;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r4c4_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r4c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
 
     // 七彩跳变
     ls_set_color(0, BLUE);
@@ -697,22 +562,17 @@ void rf24g_28keys_event_r5c1_click_handle(void)
     ls_set_color(4, YELLOW);
     ls_set_color(5, CYAN);
     ls_set_color(6, PURPLE);
-    fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_JUMP;
+    fc_effect.dream_scene.change_type = MODE_JUMP;
     fc_effect.dream_scene.c_n = 7;
     fc_effect.Now_state = IS_light_scene;
-    WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
 
-    fc_effect.app_speed = 80;
-    colorful_lights_set_speed(fc_effect.app_speed);
-    fb_speed();
-
-    set_fc_effect();
+    led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r5c2_click_handle(void)
+void rf24g_28keys_event_r5c1_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    // printf("28keys event r5c2\n");
+    printf("28keys event r5c1\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
@@ -721,10 +581,139 @@ void rf24g_28keys_event_r5c2_click_handle(void)
         return;
     }
 
-    // // 声控 呼吸
-    // fc_effect.Now_state = IS_light_music;
-    // fc_effect.music.m = 1; // 设置 声控模式索引
-    // set_fc_effect();
+    color_t color_structure = {0};
+    color_structure.r = 238;
+    color_structure.g = 131;
+    color_structure.b = 3;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r5c2_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r5c2\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 48;
+    color_structure.g = 185;
+    color_structure.b = 191;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r5c3_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r5c3\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 49;
+    color_structure.g = 32;
+    color_structure.b = 126;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r5c4_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r5c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 七彩灯没有打开，直接返回
+        return;
+    }
+
+    // 七彩渐变
+    ls_set_color(0, BLUE);
+    ls_set_color(1, GREEN);
+    ls_set_color(2, RED);
+    ls_set_color(3, WHITE);
+    ls_set_color(4, YELLOW);
+    ls_set_color(5, CYAN);
+    ls_set_color(6, PURPLE);
+    fc_effect.dream_scene.change_type = MODE_MUTIL_C_GRADUAL;
+    fc_effect.dream_scene.c_n = 7;
+    fc_effect.Now_state = IS_light_scene;
+    led_strip_rgb_schedule();
+}
+
+void rf24g_28keys_event_r6c1_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r6c1\n");
+#endif
+
+    color_t color_structure = {0};
+    color_structure.r = 251;
+    color_structure.g = 190;
+    color_structure.b = 4;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r6c2_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r6c2\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 如果 没有启动，不做处理
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 0;
+    color_structure.g = 170;
+    color_structure.b = 177;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r6c3_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r6c3\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 如果 没有启动，不做处理
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 104;
+    color_structure.g = 58;
+    color_structure.b = 146;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r6c4_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r6c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 如果 没有启动，不做处理
+        return;
+    }
 
     // 七彩呼吸
     ls_set_color(0, BLUE);
@@ -734,65 +723,79 @@ void rf24g_28keys_event_r5c2_click_handle(void)
     ls_set_color(4, YELLOW);
     ls_set_color(5, CYAN);
     ls_set_color(6, PURPLE);
-    fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_BREATH;
+    fc_effect.dream_scene.change_type = MODE_BREATH;
     fc_effect.dream_scene.c_n = 7;
     fc_effect.Now_state = IS_light_scene;
-    WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-
-    fc_effect.app_speed = 50;
-    colorful_lights_set_speed(fc_effect.app_speed);
-    fb_speed();
-
-    set_fc_effect();
+    led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r5c3_click_handle(void)
+void rf24g_28keys_event_r7c1_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    // printf("28keys event r5c3\n");
+    printf("28keys event r7c1\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
     {
-        // 七彩灯没有打开，直接返回
+        // 如果 没有打开，不打开电机，直接返回
         return;
     }
 
-    // // 声控 静态定色
-    // fc_effect.Now_state = IS_light_music;
-    // fc_effect.music.m = 2;
-    // set_fc_effect();
-
-    // 七彩跳变
-    ls_set_color(0, BLUE);
-    ls_set_color(1, GREEN);
-    ls_set_color(2, RED);
-    ls_set_color(3, WHITE);
-    ls_set_color(4, YELLOW);
-    ls_set_color(5, CYAN);
-    ls_set_color(6, PURPLE);
-    fc_effect.dream_scene.change_type = MODE_COLORFUL_LIGHTS_JUMP;
-
-    fc_effect.dream_scene.c_n = 7;
-    fc_effect.Now_state = IS_light_scene;
-    WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-
-    fc_effect.app_speed = 0;
-    colorful_lights_set_speed(fc_effect.app_speed);
-    fb_speed();
-
-    set_fc_effect();
+    color_t color_structure = {0};
+    color_structure.r = 255;
+    color_structure.g = 255;
+    color_structure.b = 0;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r5c4_click_handle(void)
+void rf24g_28keys_event_r7c2_click_handle(void)
 {
 #if USER_DEBUG_ENABLE
-    // printf("28keys event r5c4\n");
+    printf("28keys event r7c2\n");
 #endif
 
     if (fc_effect.on_off_flag == DEVICE_OFF)
     {
-        // 七彩灯没有打开，直接返回
+        // 如果 没有打开，不打开电机，直接返回
+        return;
+    }
+
+    color_t color_structure = {0};
+    color_structure.r = 2;
+    color_structure.g = 130;
+    color_structure.b = 143;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r7c3_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r7c3\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 没有打开，直接返回
+        return;
+    }
+
+    // 粉
+    color_t color_structure = {0};
+    color_structure.r = 255;
+    color_structure.g = 0;
+    color_structure.b = 255;
+    led_strip_rgb_set_static_color_by_structure(color_structure);
+}
+
+void rf24g_28keys_event_r7c4_click_handle(void)
+{
+#if USER_DEBUG_ENABLE
+    printf("28keys event r7c4\n");
+#endif
+
+    if (fc_effect.on_off_flag == DEVICE_OFF)
+    {
+        // 没有打开，直接返回
         return;
     }
 
@@ -804,332 +807,20 @@ void rf24g_28keys_event_r5c4_click_handle(void)
     ls_set_color(4, YELLOW);
     ls_set_color(5, CYAN);
     ls_set_color(6, PURPLE);
-    fc_effect.dream_scene.change_type = MODO_COLORFUL_LIGHTS_FLASH;
-
+    fc_effect.dream_scene.change_type = MODE_STROBE;
     fc_effect.dream_scene.c_n = 7;
     fc_effect.Now_state = IS_light_scene;
-    WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-
-    fc_effect.app_speed = 80;
-    colorful_lights_set_speed(fc_effect.app_speed);
-    fb_speed();
-
-    set_fc_effect();
-}
-
-void rf24g_28keys_event_r6c1_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r6c1\n");
-#endif
-
-    // 流星灯开关
-    if (fc_effect.star_on_off == DEVICE_OFF)
-    {
-        fc_effect.star_on_off = DEVICE_ON;
-#if USER_DEBUG_ENABLE
-        printf("meteor lights on\n");
-#endif
-    }
-    else
-    {
-        fc_effect.star_on_off = DEVICE_OFF;
-#if USER_DEBUG_ENABLE
-        printf("meteor lights off\n");
-#endif
-    }
-
-    if (DEVICE_ON == fc_effect.star_on_off)
-    {
-        ls_meteor_stat_effect();
-    }
-    else
-    {
-        WS2812FX_stop();
-        WS2812FX_setSegment_colorOptions(
-            1,                     // 第0段
-            1,                     // 起始位置
-            fc_effect.led_num - 1, // 结束位置
-            &close_metemor,        // 效果
-            0,                     // 颜色
-            fc_effect.star_speed,  // 速度
-            0);                    // 选项，这里像素点大小：3 REVERSE决定方向
-        // WS2812FX_start();
-        WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
-        WS2812FX_running_flag_set();
-    }
-
-    fd_meteor_on_off(); // 向app反馈流星灯的开关机状态
-}
-
-void rf24g_28keys_event_r6c2_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r6c2\n");
-#endif
-
-    if (fc_effect.star_on_off == DEVICE_OFF)
-    {
-        // 如果流星灯没有启动，不做处理
-        return;
-    }
-
-    // 流星灯模式切换
-    // 流星灯索引值范围： 1 ~ 16
-    fc_effect.star_index++;
-    if (fc_effect.star_index > 16) //
-    {
-        fc_effect.star_index = 1;
-    }
-
-    ls_meteor_stat_effect(); // 根据索引值，设置流星灯模式
-}
-
-void rf24g_28keys_event_r6c3_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r6c3\n");
-#endif
-
-    if (fc_effect.star_on_off == DEVICE_OFF)
-    {
-        // 如果流星灯没有启动，不做处理
-        return;
-    }
-
-    if (fc_effect.star_index >= 1 && fc_effect.star_index <= 14)
-    {
-        // 如果不在声控模式，调节流星灯速度
-        // 流星灯 速度 加
-        const u8 step = 10;
-        if (fc_effect.app_star_speed < 100 - step)
-        {
-            fc_effect.app_star_speed += step;
-        }
-        else
-        {
-            fc_effect.app_star_speed = 100;
-        }
-
-        meteor_lights_set_speed(fc_effect.app_star_speed);
-#if USER_DEBUG_ENABLE
-        printf("fc_effect.app_star_speed = %u\n", (u16)fc_effect.app_star_speed);
-        printf("fc_effect.star_speed = %u\n", (u16)fc_effect.star_speed);
-#endif
-        fd_meteor_speed(); // 向app反馈流星灯速度
-    }
-    else if (fc_effect.star_index >= 15 && fc_effect.star_index <= 16)
-    {
-        // 如果在声控模式，调节流星灯声控模式的灵敏度
-        meteor_lights_sound_sensitivity_add();
-#if USER_DEBUG_ENABLE
-        printf("fc_effect.meteor_lights_sensitivity = %u\n", (u16)fc_effect.meteor_lights_sensitivity);
-#endif
-        fc_effect.music.s = fc_effect.meteor_lights_sensitivity; // 存放流星灯的灵敏度，准备发送给app
-        fb_sensitive();
-    }
-
-    ls_meteor_stat_effect(); // 根据索引值，设置流星灯模式
-}
-
-void rf24g_28keys_event_r6c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r6c4\n");
-#endif
-
-    if (fc_effect.star_on_off == DEVICE_OFF)
-    {
-        // 如果流星灯没有启动，不做处理
-        return;
-    }
-
-    if (fc_effect.star_index >= 1 && fc_effect.star_index <= 14)
-    {
-        // 如果不在声控模式，调节流星灯速度
-        // 流星灯 速度减
-        const u8 step = 10;
-        if (fc_effect.app_star_speed > 0 + step)
-        {
-            fc_effect.app_star_speed -= step;
-        }
-        else
-        {
-            fc_effect.app_star_speed = 0;
-        }
-
-        meteor_lights_set_speed(fc_effect.app_star_speed);
-#if USER_DEBUG_ENABLE
-        printf("fc_effect.app_star_speed = %u\n", (u16)fc_effect.app_star_speed);
-        printf("fc_effect.star_speed = %u\n", (u16)fc_effect.star_speed);
-#endif
-        fd_meteor_speed(); // 向app反馈流星灯速度
-    }
-    else if (fc_effect.star_index >= 15 && fc_effect.star_index <= 16)
-    {
-        // 如果在声控模式，调节流星灯声控模式的灵敏度
-        meteor_lights_sound_sensitivity_sub();
-#if USER_DEBUG_ENABLE
-        printf("fc_effect.meteor_lights_sensitivity = %u\n", (u16)fc_effect.meteor_lights_sensitivity);
-#endif
-        fc_effect.music.s = fc_effect.meteor_lights_sensitivity; // 存放流星灯的灵敏度，准备发送给app
-        fb_sensitive();
-    }
-
-    ls_meteor_stat_effect(); // 根据索引值，设置流星灯模式
-}
-
-void rf24g_28keys_event_r7c1_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    printf("28keys event r7c1\n");
-#endif
-
-    if (fc_effect.on_off_flag == DEVICE_OFF)
-    {
-        // 如果七彩灯没有打开，不打开电机，直接返回
-        return;
-    }
-
-    // 电机开
-    motor_open();
-    fb_motor_mode(); // 向app反馈电机的状态
-}
-
-void rf24g_28keys_event_r7c2_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    printf("28keys event r7c2\n");
-#endif
-
-    // 电机关
-    motor_close();
-    fb_motor_mode(); // 向app反馈电机的状态
-}
-
-void rf24g_28keys_event_r7c3_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r7c3\n");
-#endif
-
-    // 电机速度加
-    if (DEVICE_OFF == fc_effect.motor_on_off)
-    {
-        // 电机没有启动，不调节电机转速
-        return;
-    }
-
-    // 判断电机是否处于普通模式（非声控模式）
-    if (MOTOR_MODE_MUSIC_RULATION != fc_effect.base_ins.mode)
-    {
-        if (fc_effect.motor_speed_index > 0)
-        {
-            fc_effect.motor_speed_index--;
-        }
-
-        fc_effect.base_ins.period = motor_period[fc_effect.motor_speed_index];
-#if USER_DEBUG_ENABLE
-        printf("motor speed index %u\n", (u16)fc_effect.motor_speed_index);
-#endif
-
-        if (fc_effect.base_ins.mode == MOTOR_MODE_FORWARD_REVERSE)
-        {
-            // 如果是在正反转模式下，改变了电机转速，需要根据当前的旋转方向，再设置一次速度
-            if (fc_effect.base_ins.dir_in_mode_forward_reverse == 0)
-            {
-                // 当前是在正转
-                motor_package_data(MOTOR_MODE_FORWARD, fc_effect.base_ins.period);
-            }
-            else
-            {
-                // 当前是在反转
-                motor_package_data(MOTOR_MODE_REVERSE, fc_effect.base_ins.period);
-            }
-        }
-        else
-        {
-            motor_package_data(fc_effect.base_ins.mode, fc_effect.base_ins.period);
-        }
-
-        os_taskq_post("msg_task", 1, MSG_SEQUENCER_ONE_WIRE_SEND_INFO);
-        fb_motor_speed(); // 向app反馈电机的转速
-    }
-    else
-    {
-        // 如果电机处于声控模式，调节灵敏度
-        // motor_sound_sensitivity_sub();
-        motor_sound_sensitivity_add();
-        fc_effect.music.s = fc_effect.base_ins.sensitivity; // 存放要反馈给app的灵敏度
-        fb_sensitive();                                     // 向app反馈灵敏度
-    }
-}
-
-void rf24g_28keys_event_r7c4_click_handle(void)
-{
-#if USER_DEBUG_ENABLE
-    // printf("28keys event r7c4\n");
-#endif
-
-    // 电机速度减
-    if (DEVICE_OFF == fc_effect.motor_on_off)
-    {
-        // 电机没有启动，不调节电机转速
-        return;
-    }
-
-    // 判断电机是否处于普通模式（非声控模式）
-    if (MOTOR_MODE_MUSIC_RULATION != fc_effect.base_ins.mode)
-    {
-        if (fc_effect.motor_speed_index < ARRAY_SIZE(motor_period) - 1)
-        {
-            fc_effect.motor_speed_index++; // 索引值越大，对应的电机转速就越慢
-        }
-
-        fc_effect.base_ins.period = motor_period[fc_effect.motor_speed_index];
-#if USER_DEBUG_ENABLE
-        printf("motor speed index %u\n", (u16)fc_effect.motor_speed_index);
-#endif
-
-        if (fc_effect.base_ins.mode == MOTOR_MODE_FORWARD_REVERSE)
-        {
-            // 如果是在正反转模式下，改变了电机转速，需要根据当前的旋转方向，再设置一次速度
-            if (fc_effect.base_ins.dir_in_mode_forward_reverse == 0)
-            {
-                // 当前是在正转
-                motor_package_data(MOTOR_MODE_FORWARD, fc_effect.base_ins.period);
-            }
-            else
-            {
-                // 当前是在反转
-                motor_package_data(MOTOR_MODE_REVERSE, fc_effect.base_ins.period);
-            }
-        }
-        else
-        {
-            motor_package_data(fc_effect.base_ins.mode, fc_effect.base_ins.period);
-        }
-
-        os_taskq_post("msg_task", 1, MSG_SEQUENCER_ONE_WIRE_SEND_INFO);
-        fb_motor_speed(); // 向app反馈电机的转速
-    }
-    else
-    {
-        // 如果电机处于声控模式，调节灵敏度
-        motor_sound_sensitivity_sub();
-        fc_effect.music.s = fc_effect.base_ins.sensitivity; // 存放要反馈给app的灵敏度
-        fb_sensitive();                                     // 向app反馈灵敏度
-    }
+    led_strip_rgb_schedule();
 }
 
 const rf24_key_handle_func_t rf24_28keys_handle_func_buff[RF24G_28_KEY_EVENT_MAX] = {
-    [RF24G_28_KEY_EVENT_R1C1_PRESS] = rf24g_28keys_event_r1c1_click_handle, // 按键事件处理函数
+    // [RF24G_28_KEY_EVENT_R1C1_PRESS] = rf24g_28keys_event_r1c1_click_handle, // 按键事件处理函数
 
-    [RF24G_28_KEY_EVENT_R1C2_PRESS] = rf24g_28keys_event_r1c2_click_handle,
+    // [RF24G_28_KEY_EVENT_R1C2_PRESS] = rf24g_28keys_event_r1c2_click_handle,
 
-    [RF24G_28_KEY_EVENT_R1C3_PRESS] = rf24g_28keys_event_r1c3_click_handle,
+    // [RF24G_28_KEY_EVENT_R1C3_PRESS] = rf24g_28keys_event_r1c3_click_handle,
 
-    [RF24G_28_KEY_EVENT_R1C4_PRESS] = rf24g_28keys_event_r1c4_click_handle,
+    // [RF24G_28_KEY_EVENT_R1C4_PRESS] = rf24g_28keys_event_r1c4_click_handle,
     // =======================================================================
 
     [RF24G_28_KEY_EVENT_R2C1_PRESS] = rf24g_28keys_event_r2c1_click_handle,

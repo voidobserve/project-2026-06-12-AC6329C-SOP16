@@ -527,22 +527,22 @@ static int multi_make_set_adv_data(void)
     // 广播头
     u8 index = 0;
     u8 info[14]; // 客户机型数据
-    // info[index++] = 'Z';
-    // info[index++] = 'D';
-    // info[index++] = 0x00; //
-    // info[index++] = 0x01;
-    // info[index++] = 0x01;
-    // info[index++] = 0xE9;
-    // info[index++] = 0x00;
-    // info[index++] = 0x00;
-
     info[index++] = 'Z';
     info[index++] = 'D';
-    info[index++] = 0x00; //  
-    info[index++] = 0xD9; //
-    info[index++] = 0x03; //
-    info[index++] = 0x5F; //
-    info[index++] = 0x64; //
+    info[index++] = 0x00; //
+    info[index++] = 0x01;
+    info[index++] = 0x01;
+    info[index++] = 0xE9;
+    info[index++] = 0x00;
+    info[index++] = 0x05;
+
+    // info[index++] = 'Z';
+    // info[index++] = 'D';
+    // info[index++] = 0x00; //  
+    // info[index++] = 0xD9; //
+    // info[index++] = 0x03; //
+    // info[index++] = 0x5F; //
+    // info[index++] = 0x64; //
 
 
     le_controller_get_mac(&info[index]); // 获取ble的蓝牙public地址
@@ -553,6 +553,7 @@ static int multi_make_set_adv_data(void)
         puts("***multi_adv_data overflow!!!!!!\n");
         return -1;
     }
+    
     log_info("multi_adv_data(%d):", offset);
     log_info_hexdump(buf, offset);
     multi_server_adv_config.adv_data_len = offset;

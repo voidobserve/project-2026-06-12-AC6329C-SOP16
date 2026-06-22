@@ -28,8 +28,7 @@
 // #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#include "rf24g_key.h"
-#include "rf433_key.h"
+#include "rf24g_key.h" 
 
 #define KEY_EVENT_CLICK_ONLY_SUPPORT 0 // 是否支持某些按键只响应单击事件
 

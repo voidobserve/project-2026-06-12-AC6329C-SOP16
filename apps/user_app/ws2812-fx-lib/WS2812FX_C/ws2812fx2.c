@@ -52,8 +52,14 @@ static uint16_t _rand16seed;
 static void (*customShow)(void) = NULL;
 uint8_t _running, _triggered;
 // u8 _triggered_2;
+
 volatile u8 _triggered_by_colorful_lights; // 标志位，由七彩灯触发。让 WS2812FX_service() 扫描到，立即更新动画
 volatile u8 _triggered_by_meteor_lights; // 标志位，由流星灯触发。让 WS2812FX_service() 扫描到，立即更新动画
+
+volatile u8 _triggered_by_led_strip_rgb;
+volatile u8 _triggered_by_led_strip_white;
+
+
 static Segment _segments[MAX_NUM_SEGMENTS];                 // array of segments (20 bytes per element)
 static Segment_runtime  _segment_runtimes[MAX_NUM_ACTIVE_SEGMENTS]; // array of segment runtimes (16 bytes per element)
 static uint8_t _active_segments[MAX_NUM_ACTIVE_SEGMENTS];          // array of active segments (1 bytes per element)
@@ -120,7 +126,8 @@ void WS2812FX_service()
 
         if(now >= _seg_rt->next_time || 
           _triggered || 
-          (_triggered_by_meteor_lights && i == 1) // 由流星灯触发，并且当前灯是流星灯（目前是第1段）
+          (_triggered_by_led_strip_rgb && i == 0) || // 由RGB幻彩灯触发，并且当前灯是RGB幻彩灯（目前是第0段）
+          (_triggered_by_led_strip_white && i == 1) // 由流星灯触发，并且当前灯是纯白色流星灯（目前是第1段）
         ) 
         {
           SET_FRAME;
@@ -143,15 +150,13 @@ void WS2812FX_service()
       _triggered = false;
     }
 
-    // if (_triggered_by_colorful_lights)
-    // {
-    //   _triggered_by_colorful_lights = false;
-    // }
+    if (_triggered_by_led_strip_rgb) {
+      _triggered_by_led_strip_rgb = false;
+    }
 
-    // if (_triggered_by_meteor_lights)
-    // {
-    //   _triggered_by_meteor_lights = false;
-    // }
+    if (_triggered_by_led_strip_white) {
+      _triggered_by_led_strip_white = false;
+    }
     
   }
 }
@@ -275,6 +280,16 @@ void WS2812FX_triggered_by_colorful_lights(void)
 void WS2812FX_triggered_by_meteor_lights(void)
 {
   _triggered_by_meteor_lights = true;
+}
+
+void WS2812FX_triggered_by_led_strip_rgb(void)
+{
+  _triggered_by_led_strip_rgb = true;
+}
+
+void WS2812FX_triggered_by_led_strip_white(void)
+{
+  _triggered_by_led_strip_white = true;
 }
 
 

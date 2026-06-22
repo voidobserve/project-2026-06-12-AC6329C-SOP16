@@ -304,6 +304,8 @@ void colorful_lights_set_brightness(u8 percent)
     fc_effect.b = (u16)percent * (255 - 25) / 100 + 25;
 }
 
+
+
 /*********************************************************
  *
  *      亮度 速度 灵敏度 流星 API
@@ -349,11 +351,11 @@ void app_set_bright(u8 tp_b)
  */
 u16 get_max_sp(void)
 {
-    u16 s;
-    s = (u32)fc_effect.led_num * 30 / 1000; // 每个LED30us
-    if (s < MAX_FAST_SPEED)
-        s = MAX_FAST_SPEED;
-    return s; //
+    u16 speed;
+    speed = (u32)fc_effect.led_num * 30 / 1000; // 每个LED30us
+    if (speed < MAX_FAST_SPEED)
+        speed = MAX_FAST_SPEED;
+    return speed; //
 }
 
 /**
@@ -658,39 +660,39 @@ void app_set_meteor_pro(u8 tp_p)
  *
  * @param tp_sw // 1 -- 开启，2--关闭
  */
-void app_set_on_off_meteor(u8 tp_sw)
-{
-    if (1 == tp_sw)
-    {
-        fc_effect.star_on_off = DEVICE_ON;
-    }
-    else
-    {
-        fc_effect.star_on_off = DEVICE_OFF;
-    }
+// void app_set_on_off_meteor(u8 tp_sw)
+// {
+//     if (1 == tp_sw)
+//     {
+//         fc_effect.star_on_off = DEVICE_ON;
+//     }
+//     else
+//     {
+//         fc_effect.star_on_off = DEVICE_OFF;
+//     }
 
-    if (DEVICE_ON == fc_effect.star_on_off)
-    {
-        ls_meteor_stat_effect();
-    }
-    else
-    {
-        WS2812FX_stop();
-        WS2812FX_setSegment_colorOptions(
-            1,                     // 第0段
-            1,                     // 起始位置
-            fc_effect.led_num - 1, // 结束位置
-            &close_metemor,        // 效果
-            0,                     // 颜色
-            fc_effect.star_speed,  // 速度
-            0);                    // 选项，这里像素点大小：3 REVERSE决定方向
-        // WS2812FX_start();
-        WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
-        WS2812FX_running_flag_set();
-    }
+//     if (DEVICE_ON == fc_effect.star_on_off)
+//     {
+//         ls_meteor_stat_effect();
+//     }
+//     else
+//     {
+//         WS2812FX_stop();
+//         WS2812FX_setSegment_colorOptions(
+//             1,                     // 第0段
+//             1,                     // 起始位置
+//             fc_effect.led_num - 1, // 结束位置
+//             &close_metemor,        // 效果
+//             0,                     // 颜色
+//             fc_effect.star_speed,  // 速度
+//             0);                    // 选项，这里像素点大小：3 REVERSE决定方向
+//         // WS2812FX_start();
+//         WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
+//         WS2812FX_running_flag_set();
+//     }
 
-    // printf("fc_effect.star_on_off == %u\n", (u16)fc_effect.star_on_off);
-}
+//     // printf("fc_effect.star_on_off == %u\n", (u16)fc_effect.star_on_off);
+// }
 
 /**
  * @brief app设置流星模式
@@ -973,8 +975,7 @@ void full_color_init(void)
     //     colorful_light_close();
     // }
     // fb_led_on_off_state(); // 与app反馈七彩灯的开关状态
-
-// USER_TO_DO 暂时屏蔽
+ 
 #if 0
     if (fc_effect.star_on_off == DEVICE_ON)
     {

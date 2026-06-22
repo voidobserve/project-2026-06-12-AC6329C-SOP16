@@ -8,7 +8,6 @@
 #include "asm/mcpwm.h"
 
 #include "../../../apps/user_app/ws2812-fx-lib/WS2812FX_C/WS2812FX.H"
-#include "../../../apps/user_app/rf433_key/rf433_learn.h"
 #include "led_strip_driver.h"
 
 volatile fc_effect_t fc_effect; // 幻彩灯串效果数据
@@ -435,6 +434,7 @@ void double_meteor(void)
 //====================================================================================================
 //====================================================================================================
 
+#if 0
 /**
  * @brief APP模式中，基本的七彩动态效果集合
  *
@@ -732,6 +732,7 @@ void base_Dynamic_Effect(u8 tp_num)
     WS2812FX_resetSegmentRuntime(0); // 清除指定段的显示缓存（调用相应的动画前，需要重新开始跑）
     set_fc_effect();
 }
+#endif
 
 /**
  * @brief 情景效果集合
@@ -796,6 +797,7 @@ static void ls_scene_effect(void)
         single_c_breath();
         break;
 
+#if 0
     case MODO_COLORFUL_LIGHTS_FLASH: // 七彩灯频闪
 
         WS2812FX_setSegment_colorOptions(
@@ -890,6 +892,7 @@ static void ls_scene_effect(void)
         // ls_set_colors(fc_effect.dream_scene.c_n, &fc_effect.dream_scene.rgb);
         WS2812FX_running_flag_set();
         break;
+#endif
 
     default:
         break;

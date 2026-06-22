@@ -14,7 +14,6 @@ typedef struct
 	u16 period_cnt;			  // 周期值计数
 	u8 is_one_cycle_comleted; // 一轮动画循环是否结束
 	u8 sensitivity;			  // 灵敏度
-
 } led_strip_white_t;
 extern volatile led_strip_white_t led_strip_white;
 

@@ -26,11 +26,24 @@ void led_strip_white_schedule(void)
 
 	if (led_strip_white.is_dev_open == DEVICE_OFF)
 	{
-		// 流星灯当前是关闭的，不调节
+		// 流星灯当前是关闭的，跑关机对应的模式，不根据模式索引进行调节  
+		meteor_light_mode_ptr = &led_strip_white_anim_pwr_off; 
+		WS2812FX_setSegment_colorOptions(
+			LED_STRIP_WHITE_SEG_INDEX,	// 第 x 段
+			LED_STRIP_WHITE_STAR_INDEX, // 起始位置
+			LED_STRIP_WHITE_LEN - 1,	// 结束位置
+			meteor_light_mode_ptr,		// 效果
+			BLACK,						// 颜色
+			led_strip_white.speed,		// 速度
+			opt);						// 选项
+
+		WS2812FX_resetSegmentRuntime(LED_STRIP_WHITE_SEG_INDEX); // 重置流星灯所在的段运行时参数
+		WS2812FX_running_flag_set();
+		os_taskq_post("msg_task", 1, MSG_USER_SAVE_INFO); 
 		return;
 	}
 
-	printf("led_strip_white.mode_index == %u\n", (u16)led_strip_white.mode_index);
+	// printf("led_strip_white.mode_index == %u\n", (u16)led_strip_white.mode_index);
 
 	// 流星效果
 	if (led_strip_white.mode_index == 1)
@@ -57,73 +70,73 @@ void led_strip_white_schedule(void)
 	}
 	else if (led_strip_white.mode_index == 5)
 	{
-		meteor_light_mode_ptr = &WS2812FX_mode_comet_4_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_comet_4_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 6)
 	{
 		// 两段流星灯追逐
-		meteor_light_mode_ptr = &meteor_lights_chase_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_chase_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 7)
 	{
 		// 两段流星灯追逐
-		meteor_light_mode_ptr = &meteor_lights_chase_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_chase_with_max_brightness;
 		opt = REVERSE; // 选项
 	}
 	else if (led_strip_white.mode_index == 8)
 	{
 		// 改成先流星上半，时间间隔结束后，流星下半
-		meteor_light_mode_ptr = &meteor_lights_half_flow_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_half_flow_with_max_brightness;
 		opt = FADE_MEDIUM; // 选项
 	}
 	else if (led_strip_white.mode_index == 9)
 	{
 		// 改成先流星上半，时间间隔结束后，流星下半
-		meteor_light_mode_ptr = &meteor_lights_half_flow_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_half_flow_with_max_brightness;
 		opt = REVERSE | FADE_MEDIUM; // 选项
 	}
 	else if (led_strip_white.mode_index == 10)
 	{
 		// 单点流水，最后四个灯堆积
-		meteor_light_mode_ptr = &meteor_lights_single_flow_and_stack_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_single_flow_and_stack_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 11)
 	{
 		// 单点流水，最后四个灯堆积（反向）
-		meteor_light_mode_ptr = &meteor_lights_single_flow_and_stack_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_single_flow_and_stack_with_max_brightness;
 		opt = REVERSE; // 选项
 	}
 	else if (led_strip_white.mode_index == 12)
 	{
 		// 堆积流水
-		meteor_light_mode_ptr = &meteor_lights_stack_flow_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_stack_flow_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 13)
 	{
 		// 堆积流水（反向）
-		meteor_light_mode_ptr = &meteor_lights_stack_flow_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_stack_flow_with_max_brightness;
 		opt = REVERSE; // 选项
 	}
 	else if (led_strip_white.mode_index == 14)
 	{
 		// 堆积流水(正向) + 堆积流水(反向)
-		meteor_light_mode_ptr = &meteor_lights_stack_flow_plus_reverse_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_stack_flow_plus_reverse_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 15)
 	{
 		// 音乐律动1
-		meteor_light_mode_ptr = &meteor_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_sound_control_meteor_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else if (led_strip_white.mode_index == 16)
 	{
 		// 音乐律动2
-		meteor_light_mode_ptr = &music_meteor3_with_max_brightness;
+		meteor_light_mode_ptr = &led_strip_white_anim_sound_control_meteor3_with_max_brightness;
 		opt = NO_OPTIONS; // 选项
 	}
 	else

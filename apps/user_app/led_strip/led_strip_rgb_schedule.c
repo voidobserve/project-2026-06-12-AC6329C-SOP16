@@ -508,6 +508,22 @@ void led_strip_rgb_rainbow_flow_handler(void)
 // 	}
 // }
 
+void led_strip_rgb_breathing_handler(void)
+{
+	mode_ptr mode;
+	u16 speed;
+	uint8_t options;
+
+	mode = &led_strip_rgb_anim_breathing;
+	speed = fc_effect.dream_scene.speed;
+	options = 0;
+
+	led_strip_rgb_schedule_set_mode(
+		mode,
+		speed,
+		options);
+}
+
 void __led_strip_rgb_schedule_in_light_scene__(void)
 {
 	// USER_TO_DO 使用查表的方法：
@@ -613,6 +629,10 @@ void __led_strip_rgb_schedule_in_light_scene__(void)
 	case MODE_RAINBOW_FLOW:
 		led_strip_rgb_rainbow_flow_handler();
 		break;
+
+	case MODE_BREATH: 
+		led_strip_rgb_breathing_handler();
+		break;
 	}
 }
 
@@ -635,11 +655,54 @@ void __led_strip_rgb_schedule_in_custom__(void)
 	}
 }
 
+void __led_strip_rgb_schedule_in_light_music__(void)
+{
+	mode_ptr mode;
+	u16 speed;
+	u8 options;
+
+	switch (fc_effect.music.m)
+	{
+	case 0:
+		mode = &led_strip_rgb_anim_sound_control_star;
+		break;
+	case 1:
+		mode = &led_strip_rgb_anim_sound_control_rainbow_flash;
+		break;
+	case 2:
+		mode = &led_strip_rgb_anim_sound_control_feq_rise;
+		break;
+	default:
+		mode = &led_strip_rgb_anim_sound_control_music_energy;
+		break;
+	}
+
+	speed = 100;
+	options = SIZE_MEDIUM | FADE_XSLOW;
+
+	led_strip_rgb_schedule_set_mode(
+		mode,
+		speed,
+		options);
+}
+
 void led_strip_rgb_schedule(void)
 {
 	mode_ptr led_strip_rgb_mode = NULL; // 动画模式指针
 	u16 speed = 0;
 	u8 option = NO_OPTIONS;
+
+	if (fc_effect.on_off_flag == DEVICE_OFF)
+	{
+		// 跑关机动画
+		led_strip_rgb_mode = &led_strip_rgb_anim_pwr_off;
+		led_strip_rgb_schedule_set_mode(
+			led_strip_rgb_mode,
+			speed,
+			option);
+
+		return;
+	}
 
 	switch (fc_effect.Now_state)
 	{
@@ -655,9 +718,10 @@ void led_strip_rgb_schedule(void)
 		fc_effect.period_cnt = 0;
 		__led_strip_rgb_schedule_in_custom__();
 		break;
-	// case IS_light_music:
-	// 	fc_music();
-	// 	break;
+	case IS_light_music:
+		// fc_music();
+		__led_strip_rgb_schedule_in_light_music__();
+		break;
 	// case IS_smear_adjust:
 	// 	printf("\n IS_smear_adjust");
 	// 	fc_smear_adjust();

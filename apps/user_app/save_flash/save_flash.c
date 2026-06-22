@@ -1,9 +1,7 @@
 
 #include "system/includes.h"
 #include "syscfg_id.h"
-#include "save_flash.h"
-#include "../../../apps/user_app/rf433_key/rf433_key.h"
-#include "../../../apps/user_app/rf433_key/rf433_learn.h"
+#include "save_flash.h" 
 
 #define FLASH_CRC_DATA 0xC5
 
@@ -38,20 +36,25 @@ void read_flash_device_status_init(void)
     if (save_data.header != FLASH_CRC_DATA) // 第一次上电
     {
         save_data.header = FLASH_CRC_DATA;
-        fc_data_init();
+        led_strip_rgb_schedule_init();
+        led_strip_white_schedule_init();
         os_taskq_post("msg_task", 1, MSG_USER_SAVE_INFO);
-        // printf("is first power on\n");
-
-        // save_user_data_enable();
     }
     else
     {
-        memcpy((u8 *)(&fc_effect), (u8 *)(&save_data.fc_save), sizeof(fc_effect_t));
-#if RF_433_LEARN_ENABLE
-        rf_433_addr_update(save_data.rf_433_addr); // 更新rf433遥控器的地址
-#endif
-        // printf("is not first power on\n");
+        memcpy(
+            (u8 *)(&fc_effect),
+            (u8 *)(&save_data.fc_save),
+            sizeof(fc_effect_t));
+        memcpy(
+            (u8 *)(&led_strip_white),
+            (u8 *)(&save_data.led_strip_white),
+            sizeof(led_strip_white_t));
     }
+
+    // 每次上电，默认打开幻彩灯和流星灯
+    fc_effect.on_off_flag = DEVICE_ON;
+    led_strip_white.is_dev_open = 1;
 }
 
 // 写入flash时间倒计时

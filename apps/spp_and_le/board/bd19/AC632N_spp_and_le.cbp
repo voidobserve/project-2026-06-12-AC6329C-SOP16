@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="project" />
+		<Option title="世纪光电 TSL Light" />
 		<Option compiler="q32s_lto_compiler" />
 		<Build>
 			<Target title="Release">
@@ -139,11 +139,11 @@
 					<Add directory="../../../user_app/one_wire" />
 					<Add directory="../../../user_app/protocol" />
 					<Add directory="../../../user_app/led_strip" />
-					<Add directory="../../../user_app/rf433_key" />
 					<Add directory="../../../user_app/save_flash" />
 					<Add directory="../../../user_app" />
 					<Add directory="../../../../include_lib/btstack/le" />
 					<Add directory="../../../user_app/user_ble_notify" />
+					<Add directory="../../../user_app/alarm" />
 				</Compiler>
 				<Linker>
 					<Add option="-flto" />
@@ -891,6 +891,9 @@
 		<Unit filename="../../../common/update/update.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="../../../user_app/alarm/alarm.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="../../../user_app/hardware/hardware.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -899,11 +902,14 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/led_strip/led_strand_effect.h" />
-		<Unit filename="../../../user_app/led_strip/led_strip_drive.c">
+		<Unit filename="../../../user_app/led_strip/led_strip_drive.h" />
+		<Unit filename="../../../user_app/led_strip/led_strip_driver.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../../user_app/led_strip/led_strip_drive.h" />
 		<Unit filename="../../../user_app/led_strip/led_strip_rgb_anim.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../user_app/led_strip/led_strip_rgb_app.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/led_strip/led_strip_rgb_schedule.c">
@@ -931,11 +937,14 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/one_wire/one_wire.h" />
+		<Unit filename="../../../user_app/protocol/app_msg_typedef.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="../../../user_app/protocol/dp_data_tran.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/protocol/dp_data_tran.h" />
-		<Unit filename="../../../user_app/rf24g_key/rf24g_app.c">
+		<Unit filename="../../../user_app/protocol/report.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/rf24g_key/rf24g_app.h" />
@@ -943,13 +952,7 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/rf24g_key/rf24g_key.h" />
-		<Unit filename="../../../user_app/rf433_key/rf433_key.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="../../../user_app/rf433_key/rf433_key.h" />
-		<Unit filename="../../../user_app/rf433_key/rf433_learn.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="../../../user_app/rf433_key/rf433_learn.h" />
 		<Unit filename="../../../user_app/save_flash/save_flash.c">
 			<Option compilerVar="CC" />

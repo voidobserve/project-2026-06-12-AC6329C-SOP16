@@ -136,7 +136,7 @@ void fd_meteor_on_off(void); // 向app反馈流星灯开关状态
 void fb_motor_speed(void); // 向app反馈电机速度值
 void fd_meteor_speed(void); // 向app反馈流星灯速度值
 
-void fb_music_type(u8 type); // 声控类型：手机麦或者设备麦
+// void fb_music_type(u8 type); // 声控类型：手机麦或者设备麦
 
 #endif
 

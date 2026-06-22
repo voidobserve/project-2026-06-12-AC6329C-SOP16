@@ -79,7 +79,7 @@ void ble_notify_param_handle(void)
 	ble_comm_att_send_data(
 		ZD_HCI_handle,
 		ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE,
-		user_ble_notify_obj.send_buff[user_ble_notify_obj.send_buff_tail],	   // 指令
+		(user_ble_notify_obj.send_buff[user_ble_notify_obj.send_buff_tail]),	   // 指令
 		user_ble_notify_obj.send_buff_len[user_ble_notify_obj.send_buff_tail], // 指令的长度
 		ATT_OP_AUTO_READ_CCC);
 	user_ble_notify_obj.send_buff_num--;

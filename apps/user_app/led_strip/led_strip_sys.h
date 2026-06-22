@@ -156,8 +156,11 @@ void soft_turn_off_lights(void);   // 软关灯处理
 void colorful_lights_set_static_mode(color_t colors_structure); // 七彩灯设置为静态模式，颜色值由传参设定
 void colorful_lights_set_static_color(u32 color);
 
-void app_set_on_off_meteor(u8 tp_sw); // 通过app设置流星开关
+// void app_set_on_off_meteor(u8 tp_sw); // 通过app设置流星开关
 void app_set_mereor_speed(u8 tp_s); // 通过app设置流星速度
 void app_set_meteor_pro(u8 tp_p); // 通过app设置流星灯周期
 void app_set_sensitive(u8 tp_s); // 通过app设置灵敏度
+
+u16 get_max_sp(void);
+
 #endif

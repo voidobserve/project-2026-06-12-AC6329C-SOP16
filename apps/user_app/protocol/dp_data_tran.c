@@ -17,6 +17,8 @@
 #include "user_ble_notify.h"
 #include "report.h"
 #include "app_msg_typedef.h"
+#include "alarm.h"
+#include "led_strip_white_schedule.h"
 
 dp_data_header_t dp_data_header; // 涂鸦DP数据头
 dp_switch_led_t dp_switch_led;   // DPID_SWITCH_LED开关
@@ -95,21 +97,19 @@ void dp_extract_data_handle(unsigned char *buff)
     /*提取DP数据*/
     switch (dp_data_header.id)
     {
-    case DPID_SWITCH_LED: // 开关(可下发可上报)
-        printf("\r\n DPID_SWITCH_LED");
+    // case DPID_SWITCH_LED: // 开关(可下发可上报)
+    //     printf("\r\n DPID_SWITCH_LED");
 
-        fc_effect.on_off_flag = buff[4];
-        if (fc_effect.on_off_flag == DEVICE_ON)
-        {
-            // USER_TO_DO 待修改：
-            // soft_turn_on_the_light();
-        }
-        else
-        {
-            // USER_TO_DO 待修改：
-            // soft_rurn_off_lights();
-        }
-        break;
+    //     fc_effect.on_off_flag = buff[4];
+    //     if (fc_effect.on_off_flag == DEVICE_ON)
+    //     { 
+    //         // soft_turn_on_the_light();
+    //     }
+    //     else
+    //     { 
+    //         // soft_rurn_off_lights();
+    //     }
+    //     break;
 
     case DPID_WORK_MODE: // 工作模式(可下发可上报)
         dp_work_mode.mode = buff[4];
@@ -441,772 +441,53 @@ void fb_motor_mode(void)
 
 void parse_zd_data(unsigned char *LedCommand, u8 len)
 {
-    volatile u8 send_buf_len = 0; // 存放待发送的指令长度
-    // const u8 send_addr_len = 6;        // 存放待发送的地址的长度
-    const u8 send_data_prefix_len = 3; // 存放待发送的指令的前缀长度(0x01、0xE9、0x00共3bytes)
-    volatile uint8_t Send_buffer[20];  // 发送缓存
-    // memcpy(Send_buffer, Ble_Addr, 6);
-    // send_buf_len += 6;
-#if 0
-    if (len >= 5 &&
-        LedCommand[0] == 0x01 &&
-        LedCommand[1] == 0xE9 &&
-        LedCommand[2] == 0x00 &&
-
-        LedCommand[3] == 0x01 &&
-        LedCommand[4] == 0x03) // 与APP同步数据
+    if (LedCommand[0] == 0x01 && LedCommand[1] == 0x03)
     {
-        // 灯光
-        //  -----------------设备信息------------------------------
+        // 收到了APP传过来的同步指令
+        report_dev_type(0x01);                          // 0x01 灯具类型：RGB
+        report_dev_on_off_state(fc_effect.on_off_flag); // 设备总开关状态
+        report_brightness(fc_effect.app_b);
+        report_speed(fc_effect.app_speed);
+        report_led_strip_rgb_len(fc_effect.led_num);
+        report_sound_control_sensitivity(fc_effect.music.s);
+        report_meteor_period(fc_effect.meteor_period);
+        report_rgb_sequence(fc_effect.sequence);
+        // report_alarm_data(0, alarm[0]);
+        // report_alarm_data(1, alarm[1]);
+        // report_alarm_data(2, alarm[2]);
+        report_sound_control_type(fc_effect.music.m_type);
+        report_sound_control_mode(fc_effect.music.m);
 
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = 0xE9;
-        Send_buffer[send_buf_len++] = 0x00;
-
-        Send_buffer[send_buf_len++] = 0x07;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = 0x02; // 灯具类型：RGBW
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        // os_time_dly(1);
-        //-------------------发送开关机状态---------------------------
-
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = get_on_off_state(); // 目前状态
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        // os_time_dly(1);
-
-        //-------------------发送亮度---------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = 0x03;
-        Send_buffer[send_buf_len++] = fc_effect.app_b;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        // os_time_dly(1);
-
-        //-------------------发送速度---------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = fc_effect.app_speed;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        // os_time_dly(1);
-
-        //-------------------发送灯带长度---------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = 0x08;
-        Send_buffer[send_buf_len++] = fc_effect.led_num >> 8;
-        Send_buffer[send_buf_len++] = fc_effect.led_num & 0xff;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        // os_time_dly(1);
-
-        //-------------------发送灵敏度---------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x05;
-        Send_buffer[send_buf_len++] = fc_effect.music.s;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------发送静态RGB模式--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = 0x1e;
-        Send_buffer[send_buf_len++] = fc_effect.rgb.r;
-        Send_buffer[send_buf_len++] = fc_effect.rgb.g;
-        Send_buffer[send_buf_len++] = fc_effect.rgb.b;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------发送RGB接口模式--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x04;
-        Send_buffer[send_buf_len++] = 0x05;
-        Send_buffer[send_buf_len++] = fc_effect.sequence;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------声控模式（手机麦或外麦--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x06;
-        Send_buffer[send_buf_len++] = 0x07;
-        Send_buffer[send_buf_len++] = fc_effect.music.m_type;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------本地麦克风模式--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x06;
-        Send_buffer[send_buf_len++] = 0x06;
-        Send_buffer[send_buf_len++] = fc_effect.music.m;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        // 流星
-
-        //-------------------流星开关--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x02;
-        Send_buffer[send_buf_len++] = fc_effect.star_on_off;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------流星速度--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x01;
-        Send_buffer[send_buf_len++] = fc_effect.app_star_speed;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------流星周期--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x03;
-        Send_buffer[send_buf_len++] = fc_effect.meteor_period;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        // 电机
-        //-------------------电机模式--------------------------
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x06;
-        Send_buffer[send_buf_len++] = fc_effect.base_ins.mode;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-
-        //-------------------电机速度--------------------------
-        // send_buf_len = send_addr_len + send_data_prefix_len;
-        send_buf_len = send_data_prefix_len;
-        Send_buffer[send_buf_len++] = 0x2F;
-        Send_buffer[send_buf_len++] = 0x07;
-        Send_buffer[send_buf_len++] = fc_effect.base_ins.period;
-        // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-        // os_time_dly(1);
-        user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
+        report_meteor_speed(led_strip_white.app_speed);
+        report_meteor_on_off_status(led_strip_white.is_dev_open);
     }
-    else
+    else if (LedCommand[0] == 0x01 &&
+             LedCommand[1] == 0x01)
     {
-        //---------------------------------接收到开关灯命令-----------------------------------
-        if (len >= 6 &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
+        // 总开关
+        u8 on_off_status = LedCommand[2];
 
-            LedCommand[3] == 0x01 &&
-            LedCommand[4] == 0x01)
-        {
-            /*
-                这里只控制七彩灯开关
-                开启七彩灯，顺便打开电机
-                关闭七彩灯，顺便关电机
-            */
-            if (LedCommand[5] == 0x01)
-            {
-                // 开灯
-                colorful_light_open();
-                motor_open();
-                fc_effect.star_on_off = DEVICE_ON;
-                ls_meteor_stat_effect();
-            }
-            else
-            {
-                extern u16 close_metemor(void);
+        // 总开关，控制RGB幻彩灯和纯白色流星灯
+        fc_effect.on_off_flag = on_off_status;
+        led_strip_white.is_dev_open = on_off_status;
 
-                // 关闭七彩灯，顺便关电机
-                colorful_light_close();
-                motor_close();
+        led_strip_rgb_schedule();
+        led_strip_white_schedule();
 
-                fc_effect.star_on_off = DEVICE_OFF;
-                WS2812FX_stop();
-                WS2812FX_setSegment_colorOptions(
-                    1,                     // 第0段
-                    1,                     // 起始位置
-                    fc_effect.led_num - 1, // 结束位置
-                    &close_metemor,        // 效果
-                    0,                     // 颜色
-                    fc_effect.star_speed,  // 速度
-                    0);                    // 选项，这里像素点大小：3 REVERSE决定方向
-                // WS2812FX_start();
-                WS2812FX_resetSegmentRuntime(1); // 重置流星灯所在的段运行时参数
-                WS2812FX_running_flag_set();
-            }
-
-            fb_led_on_off_state(); // 与app反馈七彩灯的开关状态
-            fb_motor_mode();       // 向app反馈电机的模式
-            fb_motor_speed();      // 向app反馈电机转速
-            fd_meteor_on_off();    // 向app反馈流星灯的开关机状态
-        }
-
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x02)
-        {
-            // ----------------------------------------------------------------
-            // 流星灯开关
-            app_set_on_off_meteor(LedCommand[5]);
-            fd_meteor_on_off();
-        }
-
-        //---------------------------------更新RGB-----------------------------------
-        if (len >= (3 + 6) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x01 &&
-            LedCommand[5] == 0x1e)
-        {
-            // 根据app发送过来的rgb数据，设置七彩灯为静态模式，显示对应的颜色
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            // phone_music_soure = 1;
-            set_static_mode(LedCommand[6], LedCommand[7], LedCommand[8]);
-            fb_rgb_value();
-        }
-
-        //---------------------------------静态（模式）任务处理-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x02 &&
-            LedCommand[5] >= 0 && // 颜色索引
-            LedCommand[5] < 0x07)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            fc_effect.app_rgb_mode = LedCommand[5];
-            switch (LedCommand[5])
-            {
-            case 0:
-            {
-                colorful_lights_set_static_color(RED);
-            }
-            break;
-                // ================================
-            case 1:
-            {
-                colorful_lights_set_static_color(GREEN);
-            }
-            break;
-                // ================================
-            case 2:
-            {
-                colorful_lights_set_static_color(BLUE);
-            }
-            break;
-                // ================================
-            case 3:
-            {
-                colorful_lights_set_static_color(CYAN);
-            }
-            break;
-                // ================================
-            case 4:
-            {
-                colorful_lights_set_static_color(YELLOW);
-            }
-            break;
-                // ================================
-            case 5:
-            {
-                colorful_lights_set_static_color(PURPLE);
-            }
-            break;
-                // ================================
-            case 6:
-            {
-                colorful_lights_set_static_color(PURE_WHITE);
-            }
-            break;
-            }
-        }
-
-        //---------------------------------动态处理-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x02 &&
-            LedCommand[5] >= 0x07 && // 动态模式索引
-            LedCommand[5] <= 0x20)
-        {
-            // 设置七彩灯为动态模式，模式由app发送过来
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-            fc_effect.app_rgb_mode = LedCommand[5];
-            base_Dynamic_Effect(LedCommand[5]);
-        }
-
-        //---------------------------------调节亮度0-100-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x03)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            extern void app_set_bright(u8 tp_b);
-            app_set_bright(LedCommand[5]);
-            WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-            set_fc_effect();                 // 设置完后，让七彩灯重新开始跑
-            fb_bright();
-        }
-
-        //---------------------------------调节速度0-100-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x04)
-        {
-            // USER_TO_DO 调节速度时，如果设备已经关机，只修改速度值，不调用对应的动画
-            if (DEVICE_OFF == get_on_off_state())
-            {
-#if USER_DEBUG_ENABLE
-                // printf("device off\n");
-                // printf("app set speed exit\n");
-#endif
-                return;
-            }
-
-            // 范围 0-100
-            extern void app_set_speed(u8 tp_speed);
-            app_set_speed(LedCommand[5]);    //
-            WS2812FX_resetSegmentRuntime(0); // 清空灯光动画运行时使用的数据，让动画重新开始跑
-            set_fc_effect();                 //
-            fb_speed();
-            // phone_music_soure = 1;
-        }
-
-        //---------------------------------更改RGB接口-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x05)
-        {
-            // extern void app_set_RGBsequence(u8 s);
-            // app_set_RGBsequence(LedCommand[5]);
-            // fb_RGBsequence();
-            // phone_music_soure = 1;
-        }
-
-        //---------------------------------W（灰度调节）控制----------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x04 &&
-            LedCommand[4] == 0x06)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            extern void app_set_w(u8 tp_w);
-            app_set_w(LedCommand[5]);
-        }
-
-        //---------------------------------手机音乐律动 手机麦克风-----------------------------------
-        if (len >= (3 + 5) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x06 &&
-            LedCommand[4] == 0x04)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            if (fc_effect.music.m_type == PHONE_MIC) // 手机麦模式
-            {
-                // 改成使用最大亮度：
-                fc_effect.Now_state = IS_IN_MODE_PHONE_MIC;
-                fc_effect.rgb.r = LedCommand[5];
-                fc_effect.rgb.g = LedCommand[6];
-                fc_effect.rgb.b = LedCommand[7];
-#if USER_DEBUG_ENABLE
-// printf("r = %d, g = %d, b = %d", r, g, b);
-#endif
-                if (fc_effect.rgb.r == 0xFF &&
-                    fc_effect.rgb.g == 0xFF &&
-                    fc_effect.rgb.b == 0xFF)
-                {
-
-                    fc_effect.rgb.r = 0;
-                    fc_effect.rgb.g = 0;
-                    fc_effect.rgb.b = 0;
-                    // fc_effect.rgb.w = 255;
-                }
-                else
-                {
-                    // fc_effect.rgb.w = 0;
-                }
-                set_fc_effect(); // 效果调度
-            }
-        }
-
-        //---------------------------------外麦声控模式-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x06 &&
-            LedCommand[4] == 0x06)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            extern void app_set_music_mode(u8 tp_m);
-            if (fc_effect.music.m_type != EXTERIOR_MIC)
-            {
-                // 如果不在外部麦克风模式，设置为外部麦克风模式（可能app界面跳转太快，单片机没有收到切换模式的信息）
-                fc_effect.music.m_type = EXTERIOR_MIC;
-            }
-
-            app_set_music_mode(LedCommand[5]);
-
-            // send_buf_len = send_addr_len;
-            Send_buffer[send_buf_len++] = 0x01;
-            Send_buffer[send_buf_len++] = 0xE9;
-            Send_buffer[send_buf_len++] = 0x00;
-
-            Send_buffer[send_buf_len++] = 0x06;
-            Send_buffer[send_buf_len++] = 0x06;
-            Send_buffer[send_buf_len++] = LedCommand[5];
-            // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-            user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        }
-
-        //---------------------------------设备手机麦或者外麦-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x06 &&
-            LedCommand[4] == 0x07)
-        {
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                return;
-            }
-
-            extern void set_music_type(u8 ty);
-            set_music_type(LedCommand[5]);
-
-            fc_effect.Now_state = IS_light_music;
-
-            // printf("fc_effect.music.m = %u\n", fc_effect.music.m);
-            if (fc_effect.music.m >= 4)
-            {
-                // 如果音乐模式的索引越界，则将索引置为
-                fc_effect.music.m = 3;
-            }
-            set_fc_effect();
-
-            // send_buf_len = send_addr_len;
-            Send_buffer[send_buf_len++] = 0x01;
-            Send_buffer[send_buf_len++] = 0xE9;
-            Send_buffer[send_buf_len++] = 0x00;
-
-            Send_buffer[send_buf_len++] = 0x06;
-            Send_buffer[send_buf_len++] = 0x07;
-            Send_buffer[send_buf_len++] = LedCommand[5];
-            // ble_comm_att_send_data(ZD_HCI_handle, ATT_CHARACTERISTIC_fff1_01_VALUE_HANDLE, Send_buffer, send_buf_len, ATT_OP_AUTO_READ_CCC);
-            user_ble_notify_obj.param_put(Send_buffer, send_buf_len);
-        }
-
-        //---------------------------------设置麦克风灵，电机，流星 灵敏度-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x05)
-        {
-            // if (DEVICE_OFF == get_on_off_state())
-            // {
-            //     return;
-            // }
-
-            app_set_sensitive(LedCommand[5]);
-            fb_sensitive();
-        }
-
-        //--------------------------  流星相关 ----------------------------------------------
-        // --------------------------------流星模式-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x00 &&
-            fc_effect.star_on_off == DEVICE_ON)
-        {
-            if (DEVICE_OFF == fc_effect.star_on_off)
-            {
-                return;
-            }
-
-            extern void app_set_mereor_mode(u8 tp_m); // app设置流星灯模式
-            app_set_mereor_mode(LedCommand[5]);       // LedCommand[5] 模式索引
-        }
-        //-------------------------------- 流星速度-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x01 &&
-            fc_effect.star_on_off == DEVICE_ON)
-        {
-            if (DEVICE_OFF == fc_effect.star_on_off)
-            {
-                fd_meteor_speed();
-                return;
-            }
-
-            app_set_mereor_speed(LedCommand[5]);
-            ls_meteor_stat_effect(); // 设置完成后，重新跑流星灯动画
-            fd_meteor_speed();
-        }
-
-        // --------------------------------流星灯时间间隔-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x03 &&
-            fc_effect.star_on_off == DEVICE_ON)
-        {
-            if (DEVICE_OFF == fc_effect.star_on_off)
-            {
-                fd_meteor_cycle();
-                return;
-            }
-
-            app_set_meteor_pro(LedCommand[5]);
-            ls_meteor_stat_effect(); // 设置完成后，重新跑流星灯动画
-            fd_meteor_cycle();
-        }
-
-        // ---------------------------------设置电机模式-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x06)
-        {
-            // if (DEVICE_OFF == get_on_off_state())
-            // {
-            //     // 如果七彩灯没有开，不设置电机模式（七彩灯跟电机绑定）
-
-            //     // USER_TO_DO 可能在关机之后，关闭电机之后，也要能设置电机模式，再次开启电机时能恢复到对应模式
-            //     one_wire_set_mode(LedCommand[5]);
-            //     fb_motor_mode();
-            //     return;
-            // }
-
-            // 旧版的程序是延时关闭，如果频繁切换电机模式，就会有问题，现在是如果设置了关闭电机，就直接关闭，不用延时关闭
-            if (LedCommand[5] == MOTOR_MODE_STOP)
-            {
-                if (fc_effect.base_ins.mode != MOTOR_MODE_STOP)
-                {
-                    fc_effect.base_ins.last_mode = fc_effect.base_ins.mode;
-                    fc_effect.base_ins.mode = MOTOR_MODE_STOP;
-                    fc_effect.motor_on_off = DEVICE_OFF;
-                }
-                else
-                {
-                    // 如果当前电机已经停止，需要恢复成原来的模式
-                    fc_effect.base_ins.mode = fc_effect.base_ins.last_mode;
-                    fc_effect.motor_on_off = DEVICE_ON;
-                }
-            }
-            else
-            {
-                fc_effect.motor_on_off = DEVICE_ON;
-                fc_effect.base_ins.mode = LedCommand[5];
-            }
-
-            if (fc_effect.base_ins.mode == MOTOR_MODE_MUSIC_RULATION)
-            {
-                // 声控模式，默认设置电机为正转，最慢速度
-                motor_package_data(MOTOR_MODE_FORWARD, 35);
-            }
-            else if (fc_effect.base_ins.mode == MOTOR_MODE_FORWARD_REVERSE)
-            {
-                // 如果是正反转
-                if (fc_effect.base_ins.dir_in_mode_forward_reverse == 0)
-                {
-                    motor_package_data(MOTOR_MODE_FORWARD, fc_effect.base_ins.period);
-                }
-                else
-                {
-                    motor_package_data(MOTOR_MODE_REVERSE, fc_effect.base_ins.period);
-                }
-            }
-            else
-            {
-                motor_package_data(fc_effect.base_ins.mode, fc_effect.base_ins.period);
-            }
-
-            os_taskq_post("msg_task", 1, MSG_SEQUENCER_ONE_WIRE_SEND_INFO);
-            fb_motor_mode();
-        }
-
-        // --------------------------------设置电机转速-----------------------------------
-        if (len >= (3 + 3) &&
-            LedCommand[0] == 0x01 &&
-            LedCommand[1] == 0xE9 &&
-            LedCommand[2] == 0x00 &&
-
-            LedCommand[3] == 0x2F &&
-            LedCommand[4] == 0x07)
-        {
-            fc_effect.base_ins.period = LedCommand[5];
-
-            // 如果app传过来的数值不在motor_period数组中，则给速度值和速度值索引一个默认值
-            // 更新 fc_effect.star_speed_index 索引值，后续重新上电要根据这个索引值来找到对应的电机转速
-            for (u8 i = 0; i < ARRAY_SIZE(motor_period); i++)
-            {
-                if (motor_period[i] == fc_effect.base_ins.period)
-                {
-                    fc_effect.motor_speed_index = i;
-                    break;
-                }
-
-                if (i == ARRAY_SIZE(motor_period) - 1)
-                {
-                    // 如果到最后一个元素，都没有找到对应的索引值
-                    // 给一个默认值
-                    fc_effect.motor_speed_index = 0;
-                }
-            }
-
-            fc_effect.base_ins.period = motor_period[fc_effect.motor_speed_index];
-
-            if (DEVICE_OFF == get_on_off_state())
-            {
-                // 七彩灯没有打开，只给电机转速相关的变量赋值，不驱动电机
-                fb_motor_speed();
-                return;
-            }
-
-            // motor_package_data(fc_effect.base_ins.mode, fc_effect.base_ins.period);
-            if (fc_effect.base_ins.mode == MOTOR_MODE_FORWARD_REVERSE)
-            {
-                // 如果是在正反转模式下，改变了电机转速，需要根据当前的旋转方向，再设置一次速度
-                if (fc_effect.base_ins.dir_in_mode_forward_reverse == 0)
-                {
-                    // 当前是在正转
-                    motor_package_data(MOTOR_MODE_FORWARD, fc_effect.base_ins.period);
-                }
-                else
-                {
-                    // 当前是在反转
-                    motor_package_data(MOTOR_MODE_REVERSE, fc_effect.base_ins.period);
-                }
-
-                os_taskq_post("msg_task", 1, MSG_SEQUENCER_ONE_WIRE_SEND_INFO);
-            }
-            else if (fc_effect.base_ins.mode == MOTOR_MODE_MUSIC_RULATION)
-            {
-                /*
-                    如果是在声控模式下，改变了电机转速，不给电机ic发送数据，
-                    只修改 fc_effect.base_ins.period 和 fc_effect.motor_speed_index
-                */
-            }
-            else
-            {
-                // 其他模式，直接给电机ic发送数据
-                motor_package_data(fc_effect.base_ins.mode, fc_effect.base_ins.period);
-                os_taskq_post("msg_task", 1, MSG_SEQUENCER_ONE_WIRE_SEND_INFO);
-            }
-
-            fb_motor_speed(); // 向app反馈设置之后的电机速度
-        }
+        report_dev_on_off_state(on_off_status);
+        report_meteor_on_off_status(led_strip_white.is_dev_open);
     }
-#endif
+    else if (LedCommand[0] == 0x06 &&
+             LedCommand[1] == 0x02)
+    {
+        // 设置系统时间 小时-分钟-秒-星期 
+    }
+    else if (LedCommand[0] == 0x05)
+    {
+        // 设置闹钟
+    }
 
-    if (fc_effect.on_off_flag)
+    // if (fc_effect.on_off_flag)
     {
         //---------------------------------动态处理-----------------------------------
         if (LedCommand[0] == 0x04 &&
@@ -1487,11 +768,11 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
                  LedCommand[1] == 0x06)
         {
             // 外麦声控模式
-            if (fc_effect.music.m_type == 0x01)
-            {
-                fc_effect.music.m_type = LedCommand[2];
-                report_sound_control_type(fc_effect.music.m_type);
-            }
+
+            fc_effect.music.m = LedCommand[2];
+            fc_effect.Now_state = IS_light_music;
+            led_strip_rgb_schedule();
+            report_sound_control_mode(fc_effect.music.m);
         }
         else if (LedCommand[0] == 0x2F &&
                  LedCommand[1] == 0x05)
@@ -1499,6 +780,7 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             // 设置灵敏度
             u8 sensitivity = LedCommand[2];
             fc_effect.music.s = sensitivity;
+            led_strip_white.sensitivity = sensitivity;
             report_sound_control_sensitivity(fc_effect.music.s);
         }
         else if (LedCommand[0] == 0x06 &&
@@ -1517,16 +799,61 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             fc_effect.b = (u16)percent * (255 - 25) / 100 + 25;
             WS2812FX_setBrightness(fc_effect.b);
         }
+        if (
+            LedCommand[0] == 0x2F &&
+            LedCommand[1] == 0x00)
+        {
+            // 纯白色流星灯 流星模式
+            u8 mode_index = LedCommand[2];
+            if (mode_index >= 1 && mode_index <= 16)
+            {
+                led_strip_white.mode_index = mode_index;
+            }
+
+            led_strip_white_schedule();
+        }
+        else if (LedCommand[0] == 0x2F &&
+                 LedCommand[1] == 0x01)
+        {
+            // 流星速度
+            u8 speed = LedCommand[2];
+
+            led_strip_white.app_speed = speed;
+            // 最后得到的数值会在 30 ~ 330
+            led_strip_white.speed = 300 * (100 - fc_effect.app_star_speed + 10) / 100;
+            led_strip_white_schedule();
+            report_meteor_speed(led_strip_white.app_speed);
+        }
+        else if (LedCommand[0] == 0x2F &&
+                 LedCommand[1] == 0x02)
+        {
+            // 流星灯开关
+            u8 on_off = LedCommand[2];
+            if (on_off == 0x01)
+            {
+                led_strip_white.is_dev_open = 1;
+            }
+            else
+            {
+                led_strip_white.is_dev_open = 0;
+            }
+
+            led_strip_white_schedule();
+            report_meteor_on_off_status(led_strip_white.is_dev_open);
+        }
         else if (LedCommand[0] == 0x2F &&
                  LedCommand[1] == 0x03)
         {
-            // 流星周期
+            // 流星周期(时间间隔)
             u8 period = LedCommand[2];
 
             if (period >= 2 && period <= 20)
             {
                 fc_effect.meteor_period = period;
                 fc_effect.period_cnt = 0; // 清空计数值
+
+                led_strip_white.period = period;
+                led_strip_white.period_cnt = (u16)led_strip_white.period * 1000;
             }
 
             report_meteor_period(fc_effect.meteor_period);
@@ -1546,7 +873,7 @@ void parse_led_strip_data(u8 *pBuf, u8 len)
 {
     /* 协议解析 */
     parse_zd_data(pBuf, len);
-    dp_extract_data_handle(pBuf);
+    dp_extract_data_handle(pBuf); // 额外的数据包解析
     os_taskq_post("msg_task", 1, MSG_USER_SAVE_INFO);
 }
 

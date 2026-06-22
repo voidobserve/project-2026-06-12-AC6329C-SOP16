@@ -27,11 +27,8 @@
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
 #include "debug.h"
-
-// #include "../../../apps/user_app/rf24g_key/rf24g_key.h"
-#include "../../../apps/user_app/one_wire/one_wire.h"
-#include "../../../apps/user_app/rf433_key/rf433_key.h"
-#include "../../../apps/user_app/rf433_key/rf433_learn.h"
+ 
+// #include "../../../apps/user_app/one_wire/one_wire.h" 
 #include "../../../apps/user_app/led_strip/led_strip_sys.h"
 #include "../../../apps/user_app/led_strip/led_strand_effect.h"
 #include "../../../apps/user_app/ws2812-fx-lib/WS2812FX_C/ws2812fx_effect.h"
@@ -342,10 +339,12 @@ ___interrupt
 
     TIMER_CON |= BIT(14);
 
-    extern void one_wire_send(void);
-    one_wire_send(); // steomotor
+    // extern void one_wire_send(void);
+    // one_wire_send(); // steomotor
 
+#if RF_433_KEY_ENABLE
     rf_433_key_decode_isr(); // rf433解码函数
+#endif
 }
 
 void user_timer_init(void)
@@ -368,7 +367,7 @@ void user_timer_init(void)
     request_irq(TIMER_VETOR, 3, user_timer_isr, 0);
     TIMER_CON = (0b0001 << 10) | (index << 4) | (0x01 << 0); // 选择晶振作为时钟源，分频系数，定时器计数模式
 }
-__initcall(user_timer_init);
+// __initcall(user_timer_init);
 
 #endif
 
@@ -376,15 +375,14 @@ __initcall(user_timer_init);
 #include "hardware.h"
 
 void main_while(void)
-{
-    // USER_TO_DO 待修改
-    // read_flash_device_status_init();
-    // full_color_init();
-
+{ 
     while (1)
     {
         save_user_data_time_count_down();
         save_user_data_handle();
+
+        rf24_key_handle();
+
 
         // 测试主循环执行时间
         // {
@@ -400,17 +398,7 @@ void main_while(void)
         os_time_dly(1);
     }
 }
-
-// 自定义一个简易的消息控制
-// typedef struct
-// {
-
-//     u8 flag_is_msg_;
-//     // u8 flag_is_
-
-//     void (*)(void);
-// } user_msg_handle_t;
-
+ 
 /*
     处理用户消息的线程 user_msg_handle_task
 
@@ -446,11 +434,11 @@ void user_msg_handle_task(void)
 
         switch (msg[1])
         {
-        case MSG_SEQUENCER_ONE_WIRE_SEND_INFO: // 使能单线发送
-        {
-            motor_send_data();
-        }
-        break;
+        // case MSG_SEQUENCER_ONE_WIRE_SEND_INFO: // 使能单线发送
+        // {
+        //     motor_send_data();
+        // }
+        // break;
 
         case MSG_USER_SAVE_INFO:
         {
@@ -473,15 +461,15 @@ void WS2812_circle_task(void)
     // printf("WS2812_circle_task\n");
 }
 
-void motor_task(void)
-{
-    while (1)
-    {
-        motor_forward_reverse_mode_handle();
-        motor_music_rulation_mode_handle();
-        os_time_dly(1);
-    }
-}
+// void motor_task(void)
+// {
+//     while (1)
+//     {
+//         motor_forward_reverse_mode_handle();
+//         motor_music_rulation_mode_handle();
+//         os_time_dly(1);
+//     }
+// }
 
 void ble_notify_task(void)
 {
@@ -500,16 +488,20 @@ void my_main(void)
 { 
     mic_gpio_init();         // mic
     led_strip_driver_init(); //
-    led_strip_rgb_schedule_init();
-    led_strip_white_schedule_init();
 
-    // fc_data_init();
-    WS2812FX_init(LED_STRIP_RGB_LEN + LED_STRIP_WHITE_LEN, fc_effect.sequence);
+    read_flash_device_status_init();
+
+    // 只在测试时使用
+    // led_strip_rgb_schedule_init();
+    // led_strip_white_schedule_init();
+ 
+    WS2812FX_init(
+        (LED_STRIP_RGB_LEN + LED_STRIP_WHITE_LEN),
+         fc_effect.sequence);
     WS2812FX_setBrightness(fc_effect.b);
     fc_effect.on_off_flag = DEVICE_ON;
-
-    // USER_TO_DO
-    led_strip_rgb_schedule(); // 只在测试时使用
+ 
+    led_strip_rgb_schedule();  
     led_strip_white_schedule();
 
     sys_s_hi_timer_add(NULL, WS2812_circle_task, 10); // 10ms
