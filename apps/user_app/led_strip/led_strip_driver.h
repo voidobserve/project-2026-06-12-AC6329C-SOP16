@@ -6,8 +6,7 @@
 #include "asm/ledc.h"
 #include "asm/gpio.h"
 
-// RGB 幻彩灯珠的长度，单位：颗灯珠
-// #define LED_STRIP_RGB_LEN 2 // 调试时只有两个灯
+// RGB 幻彩灯珠的长度，单位：颗灯珠 
 #define LED_STRIP_RGB_LEN 6
 // 纯白色灯珠的长度，单位：颗灯珠
 #define LED_STRIP_WHITE_LEN 12

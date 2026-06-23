@@ -166,12 +166,12 @@ void dp_extract_data_handle(unsigned char *buff)
         fc_effect.dream_scene.direction = buff[5];
         // 段大小
         fc_effect.dream_scene.seg_size = buff[6];
+        // 颜色数量
+        fc_effect.dream_scene.c_n = buff[7];
         if (fc_effect.dream_scene.c_n > MAX_NUM_COLORS)
         {
             fc_effect.dream_scene.c_n = MAX_NUM_COLORS;
         }
-        // 颜色数量
-        fc_effect.dream_scene.c_n = buff[7];
         // 清除rgb[0~n]数据
         memset(fc_effect.dream_scene.rgb, 0, sizeof(fc_effect.dream_scene.rgb));
 
@@ -182,6 +182,11 @@ void dp_extract_data_handle(unsigned char *buff)
             fc_effect.dream_scene.rgb[num].g = buff[9 + num * 3];
             fc_effect.dream_scene.rgb[num].b = buff[10 + num * 3];
         }
+
+#if USER_DEBUG_ENABLE
+        printf("fc_effect.dream_scene.c_n == %u\n", (u16)fc_effect.dream_scene.c_n);
+        printf("fc_effect.dream_scene.seg_size == %u\n", (u16)fc_effect.dream_scene.seg_size);
+#endif
 
         led_strip_rgb_schedule();
         break;

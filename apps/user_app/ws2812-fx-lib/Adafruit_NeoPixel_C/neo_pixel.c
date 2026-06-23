@@ -37,12 +37,12 @@ Adafruit_NeoPixel_updateLength()和Adafruit_NeoPixel_updateType()函数要谨慎
 static uint16_t numLEDs;  ///< Number of RGB LEDs in strip
 static uint16_t numBytes; ///< Size of 'pixels' buffer below
 // static int16_t           pin;        ///< Output pin number (-1 if not yet set)
-static uint8_t brightness;                 ///< Strip brightness 0-255 (stored as +1)
-static uint8_t pixels[SYS_MAX_LED_NUMBER]; ///< Holds LED color values (3 or 4 bytes each)   配置RAM大小
-static uint8_t rOffset;                    ///< Red index within each 3- or 4-byte pixel
-static uint8_t gOffset;                    ///< Index of green byte
-static uint8_t bOffset;                    ///< Index of blue byte
-static uint8_t wOffset;                    ///< Index of white (==rOffset if no white)
+static uint8_t brightness;                                                      ///< Strip brightness 0-255 (stored as +1)
+static volatile uint8_t pixels[SYS_MAX_LED_NUMBER] __attribute__((aligned(4))); ///< Holds LED color values (3 or 4 bytes each)   配置RAM大小
+static uint8_t rOffset;                                                         ///< Red index within each 3- or 4-byte pixel
+static uint8_t gOffset;                                                         ///< Index of green byte
+static uint8_t bOffset;                                                         ///< Index of blue byte
+static uint8_t wOffset;                                                         ///< Index of white (==rOffset if no white)
 // static uint32_t          endTime;    ///< Latch timing reference
 
 // -------------------------   应用代码 -------------------------------------
@@ -53,6 +53,7 @@ void ws281x_init()
 {
 }
 
+static volatile u8 rgb_light_buf[LED_STRIP_RGB_LEN * 3] __attribute((aligned(4)));
 static volatile u8 white_light_buf[LED_STRIP_WHITE_LEN * 3] __attribute((aligned(4))); // 纯白色流星灯的数据
 
 /**
@@ -66,9 +67,24 @@ void ws281x_show(unsigned char *pixels_pattern, unsigned short pattern_size)
     // printf("ws281x_show\n");
     // printf_buf(pixels_pattern, pattern_size);
 
+    // ledc_send_rgbbuf(
+    //     0,
+    //     pixels_pattern,
+    //     LED_STRIP_RGB_LEN,
+    //     0);
+
+    memcpy(rgb_light_buf, (pixels_pattern), LED_STRIP_RGB_LEN * 3);
+    //  rgb_light_buf[0] = 0xFF;
+    //  rgb_light_buf[1] = 0xFF;
+    //  rgb_light_buf[2] = 0x00;
+    //  rgb_light_buf[3] = 0xFF;
+    //  rgb_light_buf[4] = 0x00;
+    //  rgb_light_buf[5] = 0x00;
+
+    // printf_buf(rgb_light_buf, LED_STRIP_RGB_LEN * 3);
     ledc_send_rgbbuf(
         0,
-        pixels_pattern,
+        rgb_light_buf,
         LED_STRIP_RGB_LEN,
         0);
 
@@ -243,8 +259,8 @@ void Adafruit_NeoPixel_show(void)
     //
     // If there is not enough memory, we will fall back to cycle counter
     // using DWT
-    uint32_t pattern_size = numBytes * 8 * sizeof(uint16_t) + 2 * sizeof(uint16_t);
-    uint16_t *pixels_pattern = NULL;
+    // uint32_t pattern_size = numBytes * 8 * sizeof(uint16_t) + 2 * sizeof(uint16_t);
+    // uint16_t *pixels_pattern = NULL;
     ws281x_show(pixels, numBytes);
 #if 0
 #if defined(ARDUINO_NRF52_ADAFRUIT) // use thread-safe malloc

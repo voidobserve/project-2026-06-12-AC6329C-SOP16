@@ -87078,7 +87078,7 @@
 	"typedef.h"
 	"asm/adc_api.h"
 
-1782115439 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\rf24g_key\rf24g_key.h
+1782196019 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\rf24g_key\rf24g_key.h
 	"includes.h"
 
 1781578096 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\rf433_key\rf433_key.h
@@ -89147,7 +89147,7 @@
 
 1719186948 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\ws2812-fx-lib\ws2812fx_c\binary.h
 
-1781512008 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_driver.h
+1782181552 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_driver.h
 	"board_ac632n_demo_cfg.h"
 	"asm/ledc.h"
 	"asm/gpio.h"
@@ -89176,28 +89176,29 @@
 1766218876 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\rf433_key\rf433_learn.h
 	"includes.h"
 
-1781511933 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_driver.c
+1782178854 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_driver.c
 	"led_strip_sys.h"
 	"led_strip_driver.h"
 	"asm/adc_api.h"
 	"led_strand_effect.h"
 	"../../../include_lib/driver/cpu/bd19/asm/mcpwm.h"
 
-1782124678 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_anim.c
+1782203707 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_anim.c
 	"led_strip_rgb_anim.h"
 	"WS2812FX.H"
 	"led_strip_rgb_schedule.h"
 	"led_strip_driver.h"
+	"ws2812fx_tool.h"
 
 1782123747 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_anim.h
 	"typedef.h"
 
-1782119236 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_schedule.h
+1782175567 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_schedule.h
 	"typedef.h"
 	"WS2812FX.H"
 	"led_strand_effect.h"
 
-1782125041 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_schedule.c
+1782204503 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_rgb_schedule.c
 	"led_strip_rgb_schedule.h"
 	"led_strip_driver.h"
 	"WS2812FX.H"
@@ -89217,7 +89218,7 @@
 
 1781674564 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\protocol\dp_data_tran.h
 
-1782116463 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\user_include.h
+1782196009 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\user_include.h
 
 1781665751 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\led_strip\led_strip_voice.c
 	"led_strip_voice.h"
@@ -89270,7 +89271,7 @@
 1781519671 d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\protocol\app_msg_typedef.h
 	"typedef.h"
 
-1781683102 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\protocol\dp_data_tran.c
+1782176962 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\protocol\dp_data_tran.c
 	"cpu.h"
 	"led_strip_sys.h"
 	"paint_tool.h"
@@ -89350,7 +89351,7 @@
 	"ble_multi_profile.h"
 	"att.h"
 
-1781511535 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\ws2812-fx-lib\adafruit_neopixel_c\neo_pixel.c
+1782203768 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\user_app\ws2812-fx-lib\adafruit_neopixel_c\neo_pixel.c
 	"Adafruit_NeoPixel.h"
 	<stdbool.h>
 	<stdlib.h>
@@ -89386,7 +89387,7 @@
 	<string.h>
 	"ws2812fx_tool.h"
 
-1781676020 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\spp_and_le\app_main.c
+1782175582 source:d:\project\2026-06-12-世纪光电-tsl light(顶棚灯)-ac6329c-sop16\code\project-2026-06-12-ac6329c-sop16\apps\spp_and_le\app_main.c
 	"system/includes.h"
 	"app_config.h"
 	"app_action.h"

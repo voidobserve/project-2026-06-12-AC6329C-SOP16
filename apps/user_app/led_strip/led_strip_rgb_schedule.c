@@ -897,7 +897,9 @@ void led_strip_rgb_schedule(void)
 			led_strip_rgb_mode,
 			speed,
 			option);
+#if USER_DEBUG_ENABLE
 		printf("IS_STATIC\n");
+#endif
 		break;
 	}
 }
@@ -934,11 +936,206 @@ void led_strip_rgb_schedule_set_mode(mode_ptr mode, u16 speed, u8 option)
 		speed,											  // 速度
 		option);										  // 选项，这里像素点大小：3 REVERSE决定方向
 
-	WS2812FX_set_coloQty(0, fc_effect.dream_scene.c_n);
+	WS2812FX_set_coloQty(LED_STRIP_RGB_SEG_INDEX, fc_effect.dream_scene.c_n);
 	ls_set_colors(
 		fc_effect.dream_scene.c_n,
 		&fc_effect.dream_scene.rgb);
 
 	WS2812FX_resetSegmentRuntime(LED_STRIP_RGB_SEG_INDEX); // 清除指定段的显示缓存
 	WS2812FX_running_flag_set();
+}
+
+// 多点跑动的集合效果
+// 放在10ms执行一次
+void dot_runningh_handle(void)
+{
+	static volatile u16 dot_cnt = 0;
+	static volatile u8 next_one = 0;
+	if (fc_effect.Now_state == IS_light_scene && fc_effect.dream_scene.change_type == MODE_DOT_RUNNING_COLLECTIONS)
+	{
+		dot_cnt++;
+
+		if (next_one == 0) // 绿
+		{
+			ls_set_color(0, GREEN);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 1) // 蓝
+		{
+			ls_set_color(0, BLUE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 2) // 黄
+		{
+			ls_set_color(0, YELLOW);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 3) // 紫
+		{
+			ls_set_color(0, PURPLE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 4) // 青
+		{
+			ls_set_color(0, CYAN);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 5) // 白
+		{
+			ls_set_color(0, WHITE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 6) // 红绿蓝
+		{
+
+			ls_set_color(0, RED);
+			ls_set_color(1, GREEN);
+			ls_set_color(2, BLUE);
+			ls_set_color(3, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 4;
+		}
+		else if (next_one == 7) // 紫青黄
+		{
+
+			ls_set_color(0, PURPLE);
+			ls_set_color(1, CYAN);
+			ls_set_color(2, YELLOW);
+			ls_set_color(3, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 4;
+		}
+		else if (next_one == 8) // 七彩
+		{
+			ls_set_color(0, RED);
+			ls_set_color(1, GREEN);
+			ls_set_color(2, BLUE);
+			ls_set_color(3, PURPLE);
+			ls_set_color(4, CYAN);
+			ls_set_color(5, YELLOW);
+			ls_set_color(6, WHITE);
+			ls_set_color(7, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 8;
+		}
+		else if (next_one == 9) // 反向 红
+		{
+			ls_set_color(0, RED);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 10) // 反向 绿
+		{
+			ls_set_color(0, GREEN);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 11) // 反向 蓝
+		{
+			ls_set_color(0, BLUE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 12) // 反向 黄
+		{
+			ls_set_color(0, YELLOW);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 13) // 反向 紫
+		{
+			ls_set_color(0, PURPLE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 14) // 反向 青
+		{
+			ls_set_color(0, CYAN);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 15) // 反向 白
+		{
+			ls_set_color(0, WHITE);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 16) // 反向 红绿蓝
+		{
+			ls_set_color(0, RED);
+			ls_set_color(1, GREEN);
+			ls_set_color(2, BLUE);
+			ls_set_color(3, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 4;
+		}
+		else if (next_one == 17) // 反向 紫青黄
+		{
+			ls_set_color(0, YELLOW);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 2;
+		}
+		else if (next_one == 18) // 反向 七彩
+		{
+			ls_set_color(0, PURPLE);
+			ls_set_color(1, CYAN);
+			ls_set_color(2, YELLOW);
+			ls_set_color(3, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 4;
+		}
+		else if (next_one == 19) // 反向 七彩
+		{
+			ls_set_color(0, RED);
+			ls_set_color(1, GREEN);
+			ls_set_color(2, BLUE);
+			ls_set_color(3, PURPLE);
+			ls_set_color(4, CYAN);
+			ls_set_color(5, YELLOW);
+			ls_set_color(6, WHITE);
+			ls_set_color(7, BLACK);
+			fc_effect.dream_scene.direction = IS_back;
+			fc_effect.dream_scene.c_n = 8;
+		}
+		else if (next_one == 20) // 红
+		{
+			ls_set_color(0, RED);
+			ls_set_color(1, BLACK);
+			fc_effect.dream_scene.direction = IS_forward;
+			fc_effect.dream_scene.c_n = 2;
+		}
+
+		if (dot_cnt >= 300)
+		{
+			dot_cnt = 0;
+			next_one++;
+			next_one %= 21;
+			led_strip_rgb_schedule();
+		}
+	}
+	else
+	{
+		dot_cnt = 0;
+		next_one = 0;
+	}
 }

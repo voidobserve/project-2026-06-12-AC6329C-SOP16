@@ -2256,7 +2256,6 @@ obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,led_strip_rgb_multi_superposition_handler,pl
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,led_strip_rgb_anim_multi_superposition,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,__led_strip_rgb_schedule_in_light_scene__,pl
--r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,printf,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,__led_strip_rgb_schedule_in_custom__,pl
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,led_strip_rgb_anim_when_adjust_sequence,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,__led_strip_rgb_schedule_in_light_music__,pl
@@ -2273,6 +2272,8 @@ obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,ls_set_colors,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,WS2812FX_resetSegmentRuntime,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,WS2812FX_running_flag_set,l
+-r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,dot_runningh_handle,pl
+-r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,ls_set_color,l
 -r=obj/Release/apps/user_app/led_strip/led_strip_rgb_schedule.o,fc_effect,l
 obj/Release/apps/user_app/led_strip/led_strip_sys.o
 -r=obj/Release/apps/user_app/led_strip/led_strip_sys.o,fc_data_init,pl
@@ -2416,7 +2417,6 @@ obj/Release/apps/user_app/one_wire/one_wire.o
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,make_one_wire,pl
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,one_wire_send,pl
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,one_wire_set_mode,pl
--r=obj/Release/apps/user_app/one_wire/one_wire.o,printf,l
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,one_wire_set_period,pl
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,stepmotor_music_minSpeed,pl
 -r=obj/Release/apps/user_app/one_wire/one_wire.o,stepmotor_music_maxSpeed,pl
@@ -2511,7 +2511,6 @@ obj/Release/apps/user_app/rf24g_key/rf24g_key.o
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,rf24_key_handle,pl
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,os_taskq_post,
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,rf24g_28keys_event_r2c1_click_handle,pl
--r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,printf,l
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,led_strip_rgb_set_brightness,l
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,WS2812FX_setBrightness,l
 -r=obj/Release/apps/user_app/rf24g_key/rf24g_key.o,report_brightness,l
@@ -2586,8 +2585,8 @@ obj/Release/apps/user_app/user_ble_notify/user_ble_notify.o
 obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,ws281x_init,pl
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,ws281x_show,pl
--r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,ledc_send_rgbbuf,l
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,memcpy,l
+-r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,ledc_send_rgbbuf,l
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,HAL_GetTick,pl
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,run_tick_per_10ms,pl
 -r=obj/Release/apps/user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/neo_pixel.o,Adafruit_NeoPixel_init,pl
@@ -2986,6 +2985,7 @@ obj/Release/apps/spp_and_le/app_main.o
 -r=obj/Release/apps/spp_and_le/app_main.o,sound_handle,l
 -r=obj/Release/apps/spp_and_le/app_main.o,run_tick_per_10ms,l
 -r=obj/Release/apps/spp_and_le/app_main.o,WS2812FX_service,l
+-r=obj/Release/apps/spp_and_le/app_main.o,dot_runningh_handle,l
 -r=obj/Release/apps/spp_and_le/app_main.o,ble_notify_task,pl
 -r=obj/Release/apps/spp_and_le/app_main.o,my_main,pl
 -r=obj/Release/apps/spp_and_le/app_main.o,mic_gpio_init,l

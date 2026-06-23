@@ -21,4 +21,6 @@ void led_strip_rgb_schedule_set_mode(mode_ptr mode, u16 speed, u8 option);
 void led_strip_rgb_schedule_init(void);
 void led_strip_rgb_schedule(void);
 
+void dot_runningh_handle(void);
+
 #endif

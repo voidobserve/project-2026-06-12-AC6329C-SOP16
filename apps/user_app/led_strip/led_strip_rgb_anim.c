@@ -2,6 +2,7 @@
 #include "WS2812FX.H"
 #include "led_strip_rgb_schedule.h"
 #include "led_strip_driver.h"
+#include "ws2812fx_tool.h"
 
 volatile music_fs_t m_fs = {
 	.rise_tag = 40,
@@ -263,23 +264,37 @@ uint16_t led_strip_rgb_anim_mutil_breath(void)
 	uint16_t lum = _seg_rt->aux_param3;
 	uint32_t color;
 
+	// printf("size == %u\n", (u16)size);
+	// printf("_seg->c_n == %u\n", (u16)_seg->c_n);
+	// printf("_seg->stop == %u\n", (u16)_seg->stop);
+	// printf("_seg_rt->counter_mode_step == %u\n", (u16)_seg_rt->counter_mode_step);
+
 	if (lum > 255)
 	{
 		lum = 511 - lum;
 	}
+
 	if (size > (_seg->stop - _seg->start))
 		return 0;
+
 	_seg_rt->counter_mode_step = 0;
 	_seg_rt->aux_param = 0;
-	while (_seg_rt->counter_mode_step <= _seg->stop)
+	while (_seg_rt->counter_mode_step <= _seg->stop) // 遍历整条灯带
 	{
-		for (j = 0; (j < size) && (_seg_rt->counter_mode_step <= _seg->stop); j++)
+		for (
+			j = 0;
+			(j < size) && (_seg_rt->counter_mode_step <= _seg->stop);
+			j++) // 遍历颜色块
 		{
 			color = WS2812FX_color_blend(0, _seg->colors[_seg_rt->aux_param], lum);
 			WS2812FX_setPixelColor(_seg->start + _seg_rt->counter_mode_step, color);
 			_seg_rt->counter_mode_step++;
+
+			// printf("_seg_rt->counter_mode_step == %u\n", (u16)_seg_rt->counter_mode_step);
+			// printf("color == %x\n", color);
 		}
-		_seg_rt->aux_param++;
+
+		_seg_rt->aux_param++; // 切换到下一个颜色索引
 		_seg_rt->aux_param %= _seg->c_n;
 	}
 
@@ -1063,53 +1078,51 @@ u16 led_strip_rgb_anim_close(void)
 }
 
 /* 多个点跑马 ，点和点直接固定间隔5，支持每个点不同颜色，支持设置背景色*/
+/* 多个点跑马 ，点和点直接固定间隔 1，支持每个点不同颜色，支持设置背景色*/
 // _seg->colors[0] 马仔的颜色
 // _seg->colors[1] 最后一个颜色为背景色
 u16 led_strip_rgb_anim_multi_dot_running(void)
 {
 	uint32_t color;
 	uint16_t i;
-	for (i = 0; i < _seg_len; i++)
+	/* 可配置间隔：GAP 表示点与点之间的背景像素数量（默认 1，即间隔一个点） */
+	const uint8_t GAP = 1; /* 修改此值以改变间隔 */
+
+	/* 前景色数量，最后一个颜色为背景色 */
+	uint8_t fg_colors = (_seg->c_n > 0) ? (_seg->c_n - 1) : 0;
+
+	for (i = 0; i < _seg_len; i++) // 遍历整个灯串
 	{
-		if (_seg_rt->aux_param3 == 0)
+		uint16_t pos;
+		if (IS_REVERSE)
+			pos = _seg->start + i;
+		else
+			pos = _seg->stop - i;
+
+		/* 基于 (i + step) 的模式决定当前像素是点还是背景。
+		   当 (i + step) % (GAP+1) == 0 时为点，否则为背景。
+		   这样保证点之间至少有 GAP 个背景像素，避免点连在一起。 */
+		if (((i + _seg_rt->counter_mode_step) % (GAP + 1)) == 0)
 		{
-			// if(_seg_rt->counter_mode_step % 1==0)
-			{
-				// _seg_rt->counter_mode_step = 0;
-				_seg_rt->aux_param3 = 1;
-			}
-			/* 0-_seg->c_n-2 是前景色 */
-			color = _seg->colors[_seg_rt->aux_param2];
-			_seg_rt->aux_param2++;
-			_seg_rt->aux_param2 %= _seg->c_n - 1;
-			// color = WS2812FX_color_wheel(_seg_rt->aux_param2+=70);//随机颜色
+			/* 计算这是第几个点，用来循环前景色 */
+			uint32_t dot_index = (i + _seg_rt->counter_mode_step) / (GAP + 1);
+			uint8_t color_idx = 0;
+			if (fg_colors)
+				color_idx = dot_index % fg_colors;
+			color = _seg->colors[color_idx];
 		}
 		else
 		{
-			/* 构造背景色 */
-			if (_seg_rt->counter_mode_step % 5 == 0)
-			// if (_seg_rt->counter_mode_step % 2 == 0)
-			{
-				// _seg_rt->counter_mode_step = 0;
-
-				_seg_rt->aux_param3 = 0;
-			}
-
-			/* 最后一个颜色是背景色 */
-			color = _seg->colors[_seg->c_n - 1];
+			/* 背景色使用 colors 的最后一个颜色 */
+			color = _seg->colors[(_seg->c_n > 0) ? (_seg->c_n - 1) : 0];
 		}
 
-		if (IS_REVERSE) // 反向
-		{
-			WS2812FX_setPixelColor(_seg->start + i, color);
-		}
-		else
-		{
-			WS2812FX_setPixelColor(_seg->stop - i, color);
-		}
-		_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) % _seg_len;
+		WS2812FX_setPixelColor(pos, color);
 	}
+
+	/* 推进步进以实现移动效果，保持与其他效果一致的计数器范围 */
 	_seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) % _seg_len;
+
 	return (_seg->speed);
 }
 

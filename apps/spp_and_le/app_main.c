@@ -459,6 +459,8 @@ void WS2812_circle_task(void)
     run_tick_per_10ms();
     WS2812FX_service();
     // printf("WS2812_circle_task\n");
+
+    dot_runningh_handle();
 }
 
 // void motor_task(void)
