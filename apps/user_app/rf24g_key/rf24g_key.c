@@ -199,7 +199,7 @@ void rf24_key_handle(void)
 
 // =============================================================================
 
-void rf24g_28keys_event_r2c1_click_handle(void)
+void rf24g_28keys_event_r2c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r2c1\n");
@@ -280,7 +280,7 @@ void rf24g_28keys_event_r2c1_click_handle(void)
     }
 }
 
-void rf24g_28keys_event_r2c2_click_handle(void)
+void rf24g_28keys_event_r2c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r2c2\n");
@@ -362,7 +362,7 @@ void rf24g_28keys_event_r2c2_click_handle(void)
     }
 }
 
-void rf24g_28keys_event_r2c3_click_handle(void)
+void rf24g_28keys_event_r2c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r2c3\n");
@@ -380,7 +380,7 @@ void rf24g_28keys_event_r2c3_click_handle(void)
     led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r2c4_click_handle(void)
+void rf24g_28keys_event_r2c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r2c4\n");
@@ -420,7 +420,7 @@ void rf24g_28keys_event_r2c4_click_handle(void)
     }
 }
 
-void rf24g_28keys_event_r3c1_click_handle(void)
+void rf24g_28keys_event_r3c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r3c1\n");
@@ -435,7 +435,7 @@ void rf24g_28keys_event_r3c1_click_handle(void)
     led_strip_rgb_set_static_color(RED);
 }
 
-void rf24g_28keys_event_r3c2_click_handle(void)
+void rf24g_28keys_event_r3c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r3c2\n");
@@ -450,7 +450,7 @@ void rf24g_28keys_event_r3c2_click_handle(void)
     led_strip_rgb_set_static_color(GREEN);
 }
 
-void rf24g_28keys_event_r3c3_click_handle(void)
+void rf24g_28keys_event_r3c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r3c3\n");
@@ -465,7 +465,7 @@ void rf24g_28keys_event_r3c3_click_handle(void)
     led_strip_rgb_set_static_color(BLUE);
 }
 
-void rf24g_28keys_event_r3c4_click_handle(void)
+void rf24g_28keys_event_r3c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r3c4\n");
@@ -485,7 +485,7 @@ void rf24g_28keys_event_r3c4_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r4c1_click_handle(void)
+void rf24g_28keys_event_r4c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r4c1\n");
@@ -504,7 +504,7 @@ void rf24g_28keys_event_r4c1_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r4c2_click_handle(void)
+void rf24g_28keys_event_r4c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r4c2\n");
@@ -523,7 +523,7 @@ void rf24g_28keys_event_r4c2_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r4c3_click_handle(void)
+void rf24g_28keys_event_r4c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r4c3\n");
@@ -542,7 +542,7 @@ void rf24g_28keys_event_r4c3_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r4c4_click_handle(void)
+void rf24g_28keys_event_r4c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r4c4\n");
@@ -569,7 +569,7 @@ void rf24g_28keys_event_r4c4_click_handle(void)
     led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r5c1_click_handle(void)
+void rf24g_28keys_event_r5c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r5c1\n");
@@ -588,7 +588,7 @@ void rf24g_28keys_event_r5c1_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r5c2_click_handle(void)
+void rf24g_28keys_event_r5c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r5c2\n");
@@ -607,7 +607,7 @@ void rf24g_28keys_event_r5c2_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r5c3_click_handle(void)
+void rf24g_28keys_event_r5c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r5c3\n");
@@ -626,7 +626,7 @@ void rf24g_28keys_event_r5c3_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r5c4_click_handle(void)
+void rf24g_28keys_event_r5c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r5c4\n");
@@ -652,7 +652,7 @@ void rf24g_28keys_event_r5c4_click_handle(void)
     led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r6c1_click_handle(void)
+void rf24g_28keys_event_r6c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r6c1\n");
@@ -665,7 +665,7 @@ void rf24g_28keys_event_r6c1_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r6c2_click_handle(void)
+void rf24g_28keys_event_r6c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r6c2\n");
@@ -684,7 +684,7 @@ void rf24g_28keys_event_r6c2_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r6c3_click_handle(void)
+void rf24g_28keys_event_r6c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r6c3\n");
@@ -703,7 +703,7 @@ void rf24g_28keys_event_r6c3_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r6c4_click_handle(void)
+void rf24g_28keys_event_r6c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r6c4\n");
@@ -729,7 +729,7 @@ void rf24g_28keys_event_r6c4_click_handle(void)
     led_strip_rgb_schedule();
 }
 
-void rf24g_28keys_event_r7c1_click_handle(void)
+void rf24g_28keys_event_r7c1_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r7c1\n");
@@ -748,7 +748,7 @@ void rf24g_28keys_event_r7c1_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r7c2_click_handle(void)
+void rf24g_28keys_event_r7c2_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r7c2\n");
@@ -767,7 +767,7 @@ void rf24g_28keys_event_r7c2_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r7c3_click_handle(void)
+void rf24g_28keys_event_r7c3_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r7c3\n");
@@ -787,7 +787,7 @@ void rf24g_28keys_event_r7c3_click_handle(void)
     led_strip_rgb_set_static_color_by_structure(color_structure);
 }
 
-void rf24g_28keys_event_r7c4_click_handle(void)
+void rf24g_28keys_event_r7c4_press_handle(void)
 {
 #if USER_DEBUG_ENABLE
     printf("28keys event r7c4\n");
@@ -814,63 +814,54 @@ void rf24g_28keys_event_r7c4_click_handle(void)
 }
 
 const rf24_key_handle_func_t rf24_28keys_handle_func_buff[RF24G_28_KEY_EVENT_MAX] = {
-    // [RF24G_28_KEY_EVENT_R1C1_PRESS] = rf24g_28keys_event_r1c1_click_handle, // 按键事件处理函数
+    [RF24G_28_KEY_EVENT_R2C1_PRESS] = rf24g_28keys_event_r2c1_press_handle,
 
-    // [RF24G_28_KEY_EVENT_R1C2_PRESS] = rf24g_28keys_event_r1c2_click_handle,
+    [RF24G_28_KEY_EVENT_R2C2_PRESS] = rf24g_28keys_event_r2c2_press_handle,
 
-    // [RF24G_28_KEY_EVENT_R1C3_PRESS] = rf24g_28keys_event_r1c3_click_handle,
+    [RF24G_28_KEY_EVENT_R2C3_PRESS] = rf24g_28keys_event_r2c3_press_handle,
 
-    // [RF24G_28_KEY_EVENT_R1C4_PRESS] = rf24g_28keys_event_r1c4_click_handle,
-    // =======================================================================
-
-    [RF24G_28_KEY_EVENT_R2C1_PRESS] = rf24g_28keys_event_r2c1_click_handle,
-
-    [RF24G_28_KEY_EVENT_R2C2_PRESS] = rf24g_28keys_event_r2c2_click_handle,
-
-    [RF24G_28_KEY_EVENT_R2C3_PRESS] = rf24g_28keys_event_r2c3_click_handle,
-
-    [RF24G_28_KEY_EVENT_R2C4_PRESS] = rf24g_28keys_event_r2c4_click_handle,
+    [RF24G_28_KEY_EVENT_R2C4_PRESS] = rf24g_28keys_event_r2c4_press_handle,
 
     // =======================================================================
-    [RF24G_28_KEY_EVENT_R3C1_PRESS] = rf24g_28keys_event_r3c1_click_handle,
+    [RF24G_28_KEY_EVENT_R3C1_PRESS] = rf24g_28keys_event_r3c1_press_handle,
 
-    [RF24G_28_KEY_EVENT_R3C2_PRESS] = rf24g_28keys_event_r3c2_click_handle,
+    [RF24G_28_KEY_EVENT_R3C2_PRESS] = rf24g_28keys_event_r3c2_press_handle,
 
-    [RF24G_28_KEY_EVENT_R3C3_PRESS] = rf24g_28keys_event_r3c3_click_handle,
+    [RF24G_28_KEY_EVENT_R3C3_PRESS] = rf24g_28keys_event_r3c3_press_handle,
 
-    [RF24G_28_KEY_EVENT_R3C4_PRESS] = rf24g_28keys_event_r3c4_click_handle,
+    [RF24G_28_KEY_EVENT_R3C4_PRESS] = rf24g_28keys_event_r3c4_press_handle,
     // =======================================================================
-    [RF24G_28_KEY_EVENT_R4C1_PRESS] = rf24g_28keys_event_r4c1_click_handle,
+    [RF24G_28_KEY_EVENT_R4C1_PRESS] = rf24g_28keys_event_r4c1_press_handle,
 
-    [RF24G_28_KEY_EVENT_R4C2_PRESS] = rf24g_28keys_event_r4c2_click_handle,
+    [RF24G_28_KEY_EVENT_R4C2_PRESS] = rf24g_28keys_event_r4c2_press_handle,
 
-    [RF24G_28_KEY_EVENT_R4C3_PRESS] = rf24g_28keys_event_r4c3_click_handle,
+    [RF24G_28_KEY_EVENT_R4C3_PRESS] = rf24g_28keys_event_r4c3_press_handle,
 
-    [RF24G_28_KEY_EVENT_R4C4_PRESS] = rf24g_28keys_event_r4c4_click_handle,
+    [RF24G_28_KEY_EVENT_R4C4_PRESS] = rf24g_28keys_event_r4c4_press_handle,
     // =======================================================================
-    [RF24G_28_KEY_EVENT_R5C1_PRESS] = rf24g_28keys_event_r5c1_click_handle,
+    [RF24G_28_KEY_EVENT_R5C1_PRESS] = rf24g_28keys_event_r5c1_press_handle,
 
-    [RF24G_28_KEY_EVENT_R5C2_PRESS] = rf24g_28keys_event_r5c2_click_handle,
+    [RF24G_28_KEY_EVENT_R5C2_PRESS] = rf24g_28keys_event_r5c2_press_handle,
 
-    [RF24G_28_KEY_EVENT_R5C3_PRESS] = rf24g_28keys_event_r5c3_click_handle,
+    [RF24G_28_KEY_EVENT_R5C3_PRESS] = rf24g_28keys_event_r5c3_press_handle,
 
-    [RF24G_28_KEY_EVENT_R5C4_PRESS] = rf24g_28keys_event_r5c4_click_handle,
+    [RF24G_28_KEY_EVENT_R5C4_PRESS] = rf24g_28keys_event_r5c4_press_handle,
     // =======================================================================
-    [RF24G_28_KEY_EVENT_R6C1_PRESS] = rf24g_28keys_event_r6c1_click_handle,
+    [RF24G_28_KEY_EVENT_R6C1_PRESS] = rf24g_28keys_event_r6c1_press_handle,
 
-    [RF24G_28_KEY_EVENT_R6C2_PRESS] = rf24g_28keys_event_r6c2_click_handle,
+    [RF24G_28_KEY_EVENT_R6C2_PRESS] = rf24g_28keys_event_r6c2_press_handle,
 
-    [RF24G_28_KEY_EVENT_R6C3_PRESS] = rf24g_28keys_event_r6c3_click_handle,
+    [RF24G_28_KEY_EVENT_R6C3_PRESS] = rf24g_28keys_event_r6c3_press_handle,
 
-    [RF24G_28_KEY_EVENT_R6C4_PRESS] = rf24g_28keys_event_r6c4_click_handle,
+    [RF24G_28_KEY_EVENT_R6C4_PRESS] = rf24g_28keys_event_r6c4_press_handle,
     // =======================================================================
-    [RF24G_28_KEY_EVENT_R7C1_PRESS] = rf24g_28keys_event_r7c1_click_handle,
+    [RF24G_28_KEY_EVENT_R7C1_PRESS] = rf24g_28keys_event_r7c1_press_handle,
 
-    [RF24G_28_KEY_EVENT_R7C2_PRESS] = rf24g_28keys_event_r7c2_click_handle,
+    [RF24G_28_KEY_EVENT_R7C2_PRESS] = rf24g_28keys_event_r7c2_press_handle,
 
-    [RF24G_28_KEY_EVENT_R7C3_PRESS] = rf24g_28keys_event_r7c3_click_handle,
+    [RF24G_28_KEY_EVENT_R7C3_PRESS] = rf24g_28keys_event_r7c3_press_handle,
 
-    [RF24G_28_KEY_EVENT_R7C4_PRESS] = rf24g_28keys_event_r7c4_click_handle,
+    [RF24G_28_KEY_EVENT_R7C4_PRESS] = rf24g_28keys_event_r7c4_press_handle,
 
 };
 

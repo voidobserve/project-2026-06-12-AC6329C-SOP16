@@ -327,7 +327,7 @@ void led_strip_rgb_seg_mutil_color_flash_random_handler(void)
 	u16 speed;
 	uint8_t options;
 
-	mode = &WS2812FX_mode_fireworks;
+	mode = &led_strip_rgb_anim_fireworks;
 	speed = fc_effect.dream_scene.speed;
 	options = 0;
 
@@ -510,21 +510,21 @@ void led_strip_rgb_dot_running_handler(void)
 // 	}
 // }
 
-// void led_strip_rgb_breathing_handler(void)
-// {
-// 	mode_ptr mode;
-// 	u16 speed;
-// 	uint8_t options;
+void led_strip_rgb_breathing_handler(void)
+{
+	mode_ptr mode;
+	u16 speed;
+	uint8_t options;
 
-// 	mode = &led_strip_rgb_anim_breathing;
-// 	speed = fc_effect.dream_scene.speed;
-// 	options = 0;
+	mode = &led_strip_rgb_anim_breathing;
+	speed = fc_effect.dream_scene.speed;
+	options = 0;
 
-// 	led_strip_rgb_schedule_set_mode(
-// 		mode,
-// 		speed,
-// 		options);
-// }
+	led_strip_rgb_schedule_set_mode(
+		mode,
+		speed,
+		options);
+}
 
 void led_strip_rgb_single_superposition_handler(void)
 {
@@ -766,9 +766,9 @@ void __led_strip_rgb_schedule_in_light_scene__(void)
 		// 	led_strip_rgb_rainbow_flow_handler();
 		// 	break;
 
-		// case MODE_BREATH:
-		// 	led_strip_rgb_breathing_handler();
-		// 	break;
+	case MODE_BREATH:
+		led_strip_rgb_breathing_handler();
+		break;
 
 	case MODE_DOT_RUNNING_COLLECTIONS: // 跑动集合效果
 		led_strip_rgb_dot_running_handler();

@@ -188,6 +188,32 @@ void dp_extract_data_handle(unsigned char *buff)
         printf("fc_effect.dream_scene.seg_size == %u\n", (u16)fc_effect.dream_scene.seg_size);
 #endif
 
+        // 包含多段不同颜色的跳变模式和渐变模式，由于RGB灯串一共只有6个灯，这里将颜色段设置为1
+        if ((fc_effect.dream_scene.change_type == 0x02 ||
+             fc_effect.dream_scene.change_type == 0x0A) &&
+            fc_effect.dream_scene.seg_size == 0x05)
+        {
+            fc_effect.dream_scene.seg_size = 1;
+        }
+        // else if (fc_effect.dream_scene.change_type == 0x0B && // 呼吸模式
+        //          fc_effect.dream_scene.c_n == 0x07)           // 呼吸模式、7种颜色 -> 炫彩呼吸
+        // {
+        //     const u8 color_buf[] = {
+        //         0xFF, 0x00, 0x00,  // R
+        //         0x00, 0xFF, 0x00,  // G
+        //         0x00, 0x00, 0xFF,  // B
+        //         0xFF, 0xFF, 0x00,  // YELLOW
+        //         0x00, 0xFF, 0xFF,  // CYAN
+        //         0xFF, 0x00, 0xFF,  // MAGENTA
+        //         0xFF, 0xFF, 0xFF}; // WHITE
+        //     for (num = 0; num < 7; num++)
+        //     {
+        //         fc_effect.dream_scene.rgb[num].r = color_buf[num * 3];
+        //         fc_effect.dream_scene.rgb[num].g = color_buf[num * 3 + 1];
+        //         fc_effect.dream_scene.rgb[num].b = color_buf[num * 3 + 2];
+        //     }
+        // }
+
         led_strip_rgb_schedule();
         break;
 

@@ -50,6 +50,8 @@ u16 led_strip_rgb_anim_single_superposition(void);
 u16 led_strip_rgb_anim_single_superposition_with_background(void);
 u16 led_strip_rgb_anim_multi_superposition(void);
 
+u16 led_strip_rgb_anim_fireworks(void);
+
 u16 led_strip_rgb_anim_sound_control_star(void);
 uint16_t led_strip_rgb_anim_sound_control_rainbow_flash(void);
 void __led_strip_rgb_anim_sound_control_feq_rise_set__(u8 percent);

@@ -142,6 +142,8 @@ typedef struct Segment_runtime { // 16 bytes
 extern Segment* _seg;
 extern Segment_runtime* _seg_rt;  
 extern uint16_t _seg_len;  
+extern uint8_t _running;
+extern uint8_t _triggered; 
 
 
 void  WS2812FX_init(uint16_t num_leds, uint8_t type);
