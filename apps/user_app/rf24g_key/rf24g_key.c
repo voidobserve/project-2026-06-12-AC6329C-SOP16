@@ -3,7 +3,7 @@
 #include "save_flash.h" // 包含读写flash的接口
 #include "ws2812fx_effect.h"
 #include "led_strip_rgb_app.h"
-#include "report.h"
+#include "user_ble_notify_app.h"
 
 #include "user_include.h"
 
@@ -225,7 +225,7 @@ void rf24g_28keys_event_r2c1_press_handle(void)
 
         led_strip_rgb_set_brightness(fc_effect.app_b);
         WS2812FX_setBrightness(fc_effect.b);
-        report_brightness(fc_effect.app_b);
+        user_ble_notify_brightness(fc_effect.app_b);
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_b %u\n", (u16)fc_effect.app_b);
         printf("fc_effect.b %u\n", (u16)fc_effect.b);
@@ -247,7 +247,7 @@ void rf24g_28keys_event_r2c1_press_handle(void)
 
         led_strip_rgb_set_speed(fc_effect.app_speed);
         led_strip_rgb_schedule();
-        report_speed(fc_effect.app_speed);
+        user_ble_notify_speed(fc_effect.app_speed);
 
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
@@ -271,7 +271,7 @@ void rf24g_28keys_event_r2c1_press_handle(void)
         }
 
         led_strip_white.sensitivity = fc_effect.music.s;
-        report_sound_control_sensitivity(fc_effect.music.s);
+        user_ble_notify_sound_control_sensitivity(fc_effect.music.s);
     }
     else
     {
@@ -307,7 +307,7 @@ void rf24g_28keys_event_r2c2_press_handle(void)
 
         led_strip_rgb_set_brightness(fc_effect.app_b);
         WS2812FX_setBrightness(fc_effect.b);
-        report_brightness(fc_effect.app_b);
+        user_ble_notify_brightness(fc_effect.app_b);
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_b %u\n", (u16)fc_effect.app_b);
         printf("fc_effect.b %u\n", (u16)fc_effect.b);
@@ -329,7 +329,7 @@ void rf24g_28keys_event_r2c2_press_handle(void)
 
         led_strip_rgb_set_speed(fc_effect.app_speed);
         led_strip_rgb_schedule();
-        report_speed(fc_effect.app_speed);
+        user_ble_notify_speed(fc_effect.app_speed);
 
 #if USER_DEBUG_ENABLE
         printf("fc_effect.app_speed %u\n", (u16)fc_effect.app_speed);
@@ -353,7 +353,7 @@ void rf24g_28keys_event_r2c2_press_handle(void)
         }
 
         led_strip_white.sensitivity = fc_effect.music.s;
-        report_sound_control_sensitivity(fc_effect.music.s);
+        user_ble_notify_sound_control_sensitivity(fc_effect.music.s);
     }
     else
     {
@@ -374,9 +374,12 @@ void rf24g_28keys_event_r2c3_press_handle(void)
         return;
     }
 
-    // 使用固定的声控模式：
     fc_effect.Now_state = IS_light_music;
-    fc_effect.music.m = 1; // 设置 声控模式索引
+    // fc_effect.music.m = 1; // 设置 声控模式索引
+    fc_effect.music.m++;
+    if (fc_effect.music.m > 3) {
+        fc_effect.music.m = 0;
+    }
     led_strip_rgb_schedule();
 }
 
@@ -399,8 +402,8 @@ void rf24g_28keys_event_r2c4_press_handle(void)
         led_strip_white.is_dev_open = 1;
         led_strip_white_schedule();
 
-        report_dev_on_off_state(fc_effect.on_off_flag);
-        report_meteor_on_off_status(led_strip_white.is_dev_open);
+        user_ble_notify_dev_on_off_state(fc_effect.on_off_flag);
+        user_ble_notify_meteor_on_off_status(led_strip_white.is_dev_open);
     }
     else
     {
@@ -415,8 +418,8 @@ void rf24g_28keys_event_r2c4_press_handle(void)
         led_strip_white.is_dev_open = 0;
         led_strip_white_schedule();
 
-        report_dev_on_off_state(fc_effect.on_off_flag);
-        report_meteor_on_off_status(led_strip_white.is_dev_open);
+        user_ble_notify_dev_on_off_state(fc_effect.on_off_flag);
+        user_ble_notify_meteor_on_off_status(led_strip_white.is_dev_open);
     }
 }
 

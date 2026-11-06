@@ -14,8 +14,8 @@
 
 #include "user_include.h"
 #include "led_strand_effect.h"
-#include "user_ble_notify.h"
-#include "report.h"
+#include "user_ble_notify_driver.h"
+#include "user_ble_notify_app.h"
 #include "app_msg_typedef.h"
 #include "alarm.h"
 #include "led_strip_white_schedule.h"
@@ -41,37 +41,27 @@ unsigned long string_hex_Byte(char *str, unsigned char out_Byte)
     int i = 0;
     unsigned char temp = 0;
     unsigned long hex = 0;
-    if ((out_Byte == 1) || (out_Byte == 2) || (out_Byte == 4))
-    {
-        while (i < (out_Byte * 2))
-        {
+    if ((out_Byte == 1) || (out_Byte == 2) || (out_Byte == 4)) {
+        while (i < (out_Byte * 2)) {
             hex <<= 8;
-            if (str[i] >= '0' && str[i] <= '9')
-            {
+            if (str[i] >= '0' && str[i] <= '9') {
                 temp = (str[i] & 0x0f);
-            }
-            else if (str[i] >= 'a' && str[i] <= 'f')
-            {
+            } else if (str[i] >= 'a' && str[i] <= 'f') {
                 temp = ((str[i] + 0x09) & 0x0f);
             }
             ++i;
-            if (out_Byte != 1)
-            {
+            if (out_Byte != 1) {
                 temp <<= 4;
-                if (str[i] >= '0' && str[i] <= '9')
-                {
+                if (str[i] >= '0' && str[i] <= '9') {
                     temp |= (str[i] & 0x0f);
-                }
-                else if (str[i] >= 'a' && str[i] <= 'f')
-                {
+                } else if (str[i] >= 'a' && str[i] <= 'f') {
                     temp |= ((str[i] + 0x09) & 0x0f);
                 }
             }
             ++i;
             hex |= temp;
         }
-    }
-    else
+    } else
         return 0xffffffff; // 错误类型
     return hex;
 }
@@ -85,8 +75,6 @@ unsigned long string_hex_Byte(char *str, unsigned char out_Byte)
 void dp_extract_data_handle(unsigned char *buff)
 {
     unsigned char num = 0;
-    unsigned char max;
-    unsigned char temp;
     /*提取涂鸦DP数据头*/
     dp_data_header.id = buff[0];
     dp_data_header.type = buff[1];
@@ -95,8 +83,7 @@ void dp_extract_data_handle(unsigned char *buff)
     dp_data_header.len |= buff[3];
 
     /*提取DP数据*/
-    switch (dp_data_header.id)
-    {
+    switch (dp_data_header.id) {
         // case DPID_SWITCH_LED: // 开关(可下发可上报)
         //     printf("\r\n DPID_SWITCH_LED");
 
@@ -111,18 +98,13 @@ void dp_extract_data_handle(unsigned char *buff)
         //     }
         //     break;
 
+#if 0
     case DPID_WORK_MODE: // 工作模式(可下发可上报)
         dp_work_mode.mode = buff[4];
 
-        printf("dp_work_mode.mode = %d\r\n", dp_work_mode.mode);
-        printf("\r\n");
-
-        break;
-
-    case DPID_BRIGHT_VALUE: // 白光亮度(可下发可上报)
-        break;
-
-    case DPID_COLOUR_DATA: // 彩光(可下发可上报)
+        // printf("dp_work_mode.mode = %d\r\n", dp_work_mode.mode);
+        // printf("\r\n");
+        printf("%s %d\n", __FUNCTION__, __LINE__);
         break;
 
     case DPID_COUNTDOWN: // 倒计时(可下发可上报)
@@ -143,6 +125,7 @@ void dp_extract_data_handle(unsigned char *buff)
 
         printf("fc_effect.countdown.time = %d\r\n", fc_effect.countdown.time);
         printf("\r\n");
+        printf("%s %d\n", __FUNCTION__, __LINE__);
 
         break;
 
@@ -154,69 +137,15 @@ void dp_extract_data_handle(unsigned char *buff)
         dp_music_data.colour.v_val = string_hex_Byte(&buff[13], 2);
         dp_music_data.white_b = string_hex_Byte(&buff[17], 2);
         dp_music_data.ct = string_hex_Byte(&buff[21], 2);
-
+        printf("%s %d\n", __FUNCTION__, __LINE__);
         break;
-
-    case DPID_RGBIC_LINERLIGHT_SCENE: // 炫彩情景(可下发可上报)
-        fc_effect.Now_state = IS_light_scene;
-
-        // 变化类型、模式
-        fc_effect.dream_scene.change_type = buff[4];
-        // 方向
-        fc_effect.dream_scene.direction = buff[5];
-        // 段大小
-        fc_effect.dream_scene.seg_size = buff[6];
-        // 颜色数量
-        fc_effect.dream_scene.c_n = buff[7];
-        if (fc_effect.dream_scene.c_n > MAX_NUM_COLORS)
-        {
-            fc_effect.dream_scene.c_n = MAX_NUM_COLORS;
-        }
-        // 清除rgb[0~n]数据
-        memset(fc_effect.dream_scene.rgb, 0, sizeof(fc_effect.dream_scene.rgb));
-
-        // 数据循环传输
-        for (num = 0; num < fc_effect.dream_scene.c_n; num++)
-        {
-            fc_effect.dream_scene.rgb[num].r = buff[8 + num * 3];
-            fc_effect.dream_scene.rgb[num].g = buff[9 + num * 3];
-            fc_effect.dream_scene.rgb[num].b = buff[10 + num * 3];
-        }
-
-#if USER_DEBUG_ENABLE
-        printf("fc_effect.dream_scene.c_n == %u\n", (u16)fc_effect.dream_scene.c_n);
-        printf("fc_effect.dream_scene.seg_size == %u\n", (u16)fc_effect.dream_scene.seg_size);
 #endif
 
-        // 包含多段不同颜色的跳变模式和渐变模式，由于RGB灯串一共只有6个灯，这里将颜色段设置为1
-        if ((fc_effect.dream_scene.change_type == 0x02 ||
-             fc_effect.dream_scene.change_type == 0x0A) &&
-            fc_effect.dream_scene.seg_size == 0x05)
-        {
-            fc_effect.dream_scene.seg_size = 1;
-        }
-        // else if (fc_effect.dream_scene.change_type == 0x0B && // 呼吸模式
-        //          fc_effect.dream_scene.c_n == 0x07)           // 呼吸模式、7种颜色 -> 炫彩呼吸
-        // {
-        //     const u8 color_buf[] = {
-        //         0xFF, 0x00, 0x00,  // R
-        //         0x00, 0xFF, 0x00,  // G
-        //         0x00, 0x00, 0xFF,  // B
-        //         0xFF, 0xFF, 0x00,  // YELLOW
-        //         0x00, 0xFF, 0xFF,  // CYAN
-        //         0xFF, 0x00, 0xFF,  // MAGENTA
-        //         0xFF, 0xFF, 0xFF}; // WHITE
-        //     for (num = 0; num < 7; num++)
-        //     {
-        //         fc_effect.dream_scene.rgb[num].r = color_buf[num * 3];
-        //         fc_effect.dream_scene.rgb[num].g = color_buf[num * 3 + 1];
-        //         fc_effect.dream_scene.rgb[num].b = color_buf[num * 3 + 2];
-        //     }
-        // }
+    case DPID_RGBIC_LINERLIGHT_SCENE: // 炫彩情景(可下发可上报)
 
-        led_strip_rgb_schedule();
         break;
 
+#if 0
     case DPID_LED_NUMBER_SET: // led点数设置(可下发可上报)
         // DP协议参数
         dp_lednum_set.lednum = buff[4];
@@ -236,10 +165,9 @@ void dp_extract_data_handle(unsigned char *buff)
         if (fc_effect.led_num >= 48)
             fc_effect.led_num = 48;
 
+        printf("%s %d\n", __FUNCTION__, __LINE__);
         break;
-
-    case DPID_DRAW_TOOL: // 涂抹功能(可下发可上报)
-        break;
+#endif
     }
 }
 
@@ -258,7 +186,7 @@ void zd_fb_2_app(u8 *p, u8 len)
 {
     uint8_t buffer[30];     // 发送缓存
     memcpy(buffer, p, len); //
-    user_ble_notify_obj.param_put(buffer, len);
+    user_ble_notify_param_put(buffer, len);
 }
 
 /*********************************************************
@@ -355,12 +283,9 @@ void fd_meteor_on_off(void)
     tp_buffer[len++] = 0x02;
 
     // 目前在 app 中，1表示开启，2表示关闭
-    if (DEVICE_ON == fc_effect.star_on_off)
-    {
+    if (DEVICE_ON == fc_effect.star_on_off) {
         data = 1;
-    }
-    else
-    {
+    } else {
         data = 2;
     }
 
@@ -470,33 +395,36 @@ void fb_motor_mode(void)
     zd_fb_2_app(tp_buffer, len);
 }
 
-void parse_zd_data(unsigned char *LedCommand, u8 len)
+void parse_zd_data(unsigned char *buf, u8 buf_len)
 {
-    if (LedCommand[0] == 0x01 && LedCommand[1] == 0x03)
-    {
-        // 收到了APP传过来的同步指令
-        report_dev_type(0x01);                          // 0x01 灯具类型：RGB
-        report_dev_on_off_state(fc_effect.on_off_flag); // 设备总开关状态
-        report_brightness(fc_effect.app_b);
-        report_speed(fc_effect.app_speed);
-        report_led_strip_rgb_len(fc_effect.led_num);
-        report_sound_control_sensitivity(fc_effect.music.s);
-        report_meteor_period(fc_effect.meteor_period);
-        report_rgb_sequence(fc_effect.sequence);
-        // report_alarm_data(0, alarm[0]);
-        // report_alarm_data(1, alarm[1]);
-        // report_alarm_data(2, alarm[2]);
-        report_sound_control_type(fc_effect.music.m_type);
-        report_sound_control_mode(fc_effect.music.m);
-
-        report_meteor_speed(led_strip_white.app_speed);
-        report_meteor_on_off_status(led_strip_white.is_dev_open);
+    uint8_t *buf_ptr = buf;
+    const static u8 prefix[] = {0x01, 0xE9, 0x00};
+    if (buf_len >= 3 && strncmp((char *)buf, (char *)prefix, 3) != 0) {
+        // 前缀不符合，直接返回
+        return;
     }
-    else if (LedCommand[0] == 0x01 &&
-             LedCommand[1] == 0x01)
-    {
+
+    buf_ptr += 3; // 跳过前缀
+
+    if (buf_ptr[0] == 0x01 && buf_ptr[1] == 0x03) {
+        // 收到了APP传过来的同步指令
+        user_ble_notify_dev_type(0x01); // 0x01 灯具类型：RGB
+        user_ble_notify_dev_on_off_state(
+            fc_effect.on_off_flag); // 设备总开关状态
+        user_ble_notify_brightness(fc_effect.app_b);
+        user_ble_notify_speed(fc_effect.app_speed);
+        user_ble_notify_led_strip_rgb_len(fc_effect.led_num);
+        user_ble_notify_sound_control_sensitivity(fc_effect.music.s);
+        user_ble_notify_meteor_period(fc_effect.meteor_period);
+        user_ble_notify_rgb_sequence(fc_effect.sequence);
+        user_ble_notify_sound_control_type(fc_effect.music.m_type);
+        user_ble_notify_sound_control_mode(fc_effect.music.m);
+
+        user_ble_notify_meteor_speed(led_strip_white.app_speed);
+        user_ble_notify_meteor_on_off_status(led_strip_white.is_dev_open);
+    } else if (buf_ptr[0] == 0x01 && buf_ptr[1] == 0x01) {
         // 总开关
-        u8 on_off_status = LedCommand[2];
+        u8 on_off_status = buf_ptr[2];
 
         // 总开关，控制RGB幻彩灯和纯白色流星灯
         fc_effect.on_off_flag = on_off_status;
@@ -505,28 +433,16 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
         led_strip_rgb_schedule();
         led_strip_white_schedule();
 
-        report_dev_on_off_state(on_off_status);
-        report_meteor_on_off_status(led_strip_white.is_dev_open);
-    }
-    else if (LedCommand[0] == 0x06 &&
-             LedCommand[1] == 0x02)
-    {
-        // 设置系统时间 小时-分钟-秒-星期
-    }
-    else if (LedCommand[0] == 0x05)
-    {
-        // 设置闹钟
+        user_ble_notify_dev_on_off_state(on_off_status);
+        user_ble_notify_meteor_on_off_status(led_strip_white.is_dev_open);
     }
 
     // if (fc_effect.on_off_flag)
     {
         //---------------------------------动态处理-----------------------------------
-        if (LedCommand[0] == 0x04 &&
-            LedCommand[1] == 0x02 &&
-            LedCommand[2] >= 0x07 && LedCommand[2] <= 0x1c)
-        {
-            switch (LedCommand[2])
-            {
+        if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x02 && buf_ptr[2] >= 0x07 &&
+            buf_ptr[2] <= 0x1c) {
+            switch (buf_ptr[2]) {
             case 0x07: // 3色跳变
                 ls_set_color(0, BLUE);
                 ls_set_color(1, GREEN);
@@ -719,22 +635,15 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             }
             // set_fc_effect();
             led_strip_rgb_schedule();
-        }
-        else if (LedCommand[0] == 0x04 &&
-                 LedCommand[1] == 0x01 &&
-                 LedCommand[2] == 0x1e)
-        {
+        } else if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x01 &&
+                   buf_ptr[2] == 0x1e) {
             // 设置为静态模式，调节静态颜色
             extern void set_static_mode(u8 r, u8 g, u8 b);
-            set_static_mode(LedCommand[3], LedCommand[4], LedCommand[5]);
-        }
-        else if (LedCommand[0] == 0x04 &&
-                 LedCommand[1] == 0x03)
-        {
+            set_static_mode(buf_ptr[3], buf_ptr[4], buf_ptr[5]);
+        } else if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x03) {
             // 调节亮度
-            u8 percent = LedCommand[2];
-            if (percent > 100)
-            {
+            u8 percent = buf_ptr[2];
+            if (percent > 100) {
                 percent = 100;
             }
 
@@ -742,87 +651,64 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             fc_effect.b = (u16)percent * (255 - 25) / 100 + 25;
             WS2812FX_setBrightness(fc_effect.b);
 
-            report_brightness(fc_effect.app_b);
-        }
-        else if (LedCommand[0] == 0x04 &&
-                 LedCommand[1] == 0x04)
-        {
+            user_ble_notify_brightness(fc_effect.app_b);
+        } else if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x04) {
             // 调节速度
-            u8 speed = LedCommand[2];
+            u8 speed = buf_ptr[2];
 
             fc_effect.app_speed = speed;
             fc_effect.dream_scene.speed = 500 - ((u32)500 * speed / 100);
-            if (fc_effect.dream_scene.speed <= get_max_sp())
-            {
+            if (fc_effect.dream_scene.speed <= get_max_sp()) {
                 fc_effect.dream_scene.speed = get_max_sp();
             }
 
             led_strip_rgb_schedule();
-            report_speed(fc_effect.app_speed);
-        }
-        else if (LedCommand[0] == 0x04 &&
-                 LedCommand[1] == 0x05)
-        {
+            user_ble_notify_speed(fc_effect.app_speed);
+        } else if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x05) {
             // 更改RGB接口
-            u8 sequence = LedCommand[2];
-            if (sequence < ARRAY_SIZE(rgb_sequence_map))
-            {
+            u8 sequence = buf_ptr[2];
+            if (sequence < ARRAY_SIZE(rgb_sequence_map)) {
                 fc_effect.sequence = rgb_sequence_map[sequence];
                 WS2812FX_init(fc_effect.led_num, fc_effect.sequence);
                 fc_effect.custom_mode_index = 2; // 调整RGB顺序效果
                 fc_effect.Now_state = ACT_CUSTOM;
                 led_strip_rgb_schedule(); // 重新开始跑动画
             }
-        }
-        else if (LedCommand[0] == 0x04 &&
-                 LedCommand[1] == 0x08)
-        {
+        } else if (buf_ptr[0] == 0x04 && buf_ptr[1] == 0x08) {
             // 调节 灯带长度 (RGB灯珠数量)
-            u16 len = LedCommand[2] << 8 | LedCommand[3];
-            if (len > 2048)
-            {
+            u16 len = buf_ptr[2] << 8 | buf_ptr[3];
+            if (len > 2048) {
                 len = 2048;
             }
             fc_effect.led_num = len;
             WS2812FX_init(fc_effect.led_num, fc_effect.sequence);
             // 更新灯带对应的动画速度
-            if (get_max_sp() > fc_effect.dream_scene.speed)
-            {
+            if (get_max_sp() > fc_effect.dream_scene.speed) {
                 fc_effect.dream_scene.speed = get_max_sp();
             }
 
             led_strip_rgb_schedule(); // 重新开始跑动画
 
-            report_led_strip_rgb_len(fc_effect.led_num);
-        }
-        else if (LedCommand[0] == 0x06 &&
-                 LedCommand[1] == 0x06)
-        {
+            user_ble_notify_led_strip_rgb_len(fc_effect.led_num);
+        } else if (buf_ptr[0] == 0x06 && buf_ptr[1] == 0x06) {
             // 外麦声控模式
 
-            fc_effect.music.m = LedCommand[2];
+            fc_effect.music.m = buf_ptr[2];
             fc_effect.Now_state = IS_light_music;
             led_strip_rgb_schedule();
-            report_sound_control_mode(fc_effect.music.m);
-        }
-        else if (LedCommand[0] == 0x2F &&
-                 LedCommand[1] == 0x05)
-        {
+            user_ble_notify_sound_control_mode(fc_effect.music.m);
+        } else if (buf_ptr[0] == 0x2F && buf_ptr[1] == 0x05) {
             // 设置灵敏度
-            u8 sensitivity = LedCommand[2];
+            u8 sensitivity = buf_ptr[2];
             fc_effect.music.s = sensitivity;
             led_strip_white.sensitivity = sensitivity;
-            report_sound_control_sensitivity(fc_effect.music.s);
-        }
-        else if (LedCommand[0] == 0x06 &&
-                 LedCommand[1] == 0x04)
-        {
+            user_ble_notify_sound_control_sensitivity(fc_effect.music.s);
+        } else if (buf_ptr[0] == 0x06 && buf_ptr[1] == 0x04) {
             // 手机音乐律动
-            set_static_mode(LedCommand[2], LedCommand[3], LedCommand[4]);
+            set_static_mode(buf_ptr[2], buf_ptr[3], buf_ptr[4]);
 
-            u8 percent = LedCommand[5];
-            if (percent > 100)
-            {
+            u8 percent = buf_ptr[5];
+            if (percent > 100) {
                 percent = 100;
             }
 
@@ -830,59 +716,43 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
             fc_effect.b = (u16)percent * (255 - 25) / 100 + 25;
             WS2812FX_setBrightness(fc_effect.b);
         }
-        if (
-            LedCommand[0] == 0x2F &&
-            LedCommand[1] == 0x00)
-        {
+        if (buf_ptr[0] == 0x2F && buf_ptr[1] == 0x00) {
             // 纯白色流星灯 流星模式
-            u8 mode_index = LedCommand[2];
-            if (mode_index >= 1 && mode_index <= 16)
-            {
+            u8 mode_index = buf_ptr[2];
+            if (mode_index >= 1 && mode_index <= 16) {
                 led_strip_white.mode_index = mode_index;
             }
 
             led_strip_white_schedule();
-        }
-        else if (LedCommand[0] == 0x2F &&
-                 LedCommand[1] == 0x01)
-        {
+        } else if (buf_ptr[0] == 0x2F && buf_ptr[1] == 0x01) {
             // 流星速度
-            u8 speed = LedCommand[2];
+            u8 speed = buf_ptr[2];
 
             led_strip_white.app_speed = speed;
             // 最后得到的数值会在 30 ~ 330，数值越小，速度越快
-            led_strip_white.speed = 300 * (100 - led_strip_white.app_speed + 10) / 100;
+            led_strip_white.speed =
+                300 * (100 - led_strip_white.app_speed + 10) / 100;
 #if USER_DEBUG_ENABLE
             // printf("led_strip_white.speed == %u\n", (u16)led_strip_white.speed);
 #endif
             led_strip_white_schedule();
-            report_meteor_speed(led_strip_white.app_speed);
-        }
-        else if (LedCommand[0] == 0x2F &&
-                 LedCommand[1] == 0x02)
-        {
+            user_ble_notify_meteor_speed(led_strip_white.app_speed);
+        } else if (buf_ptr[0] == 0x2F && buf_ptr[1] == 0x02) {
             // 流星灯开关
-            u8 on_off = LedCommand[2];
-            if (on_off == 0x01)
-            {
+            u8 on_off = buf_ptr[2];
+            if (on_off == 0x01) {
                 led_strip_white.is_dev_open = 1;
-            }
-            else
-            {
+            } else {
                 led_strip_white.is_dev_open = 0;
             }
 
             led_strip_white_schedule();
-            report_meteor_on_off_status(led_strip_white.is_dev_open);
-        }
-        else if (LedCommand[0] == 0x2F &&
-                 LedCommand[1] == 0x03)
-        {
+            user_ble_notify_meteor_on_off_status(led_strip_white.is_dev_open);
+        } else if (buf_ptr[0] == 0x2F && buf_ptr[1] == 0x03) {
             // 流星周期(时间间隔)
-            u8 period = LedCommand[2];
+            u8 period = buf_ptr[2];
 
-            if (period >= 2 && period <= 20)
-            {
+            if (period >= 2 && period <= 20) {
                 fc_effect.meteor_period = period;
                 fc_effect.period_cnt = 0; // 清空计数值
 
@@ -890,14 +760,52 @@ void parse_zd_data(unsigned char *LedCommand, u8 len)
                 led_strip_white.period_cnt = (u16)led_strip_white.period * 1000;
             }
 
-            report_meteor_period(fc_effect.meteor_period);
-        }
-        else if (LedCommand[0] == 0x06 &&
-                 LedCommand[1] == 0x07)
-        {
+            user_ble_notify_meteor_period(fc_effect.meteor_period);
+        } else if (buf_ptr[0] == 0x06 && buf_ptr[1] == 0x07) {
             // 设置为手机麦或者外麦
-            fc_effect.music.m_type = LedCommand[2];
-            report_sound_control_type(fc_effect.music.m_type);
+            fc_effect.music.m_type = buf_ptr[2];
+            user_ble_notify_sound_control_type(fc_effect.music.m_type);
+        } else if (buf_ptr[0] == 0x38) {
+            uint8_t i;
+            fc_effect.Now_state = IS_light_scene;
+
+            // 变化类型、模式
+            fc_effect.dream_scene.change_type = buf_ptr[4];
+            // 方向
+            fc_effect.dream_scene.direction = buf_ptr[5];
+            // 段大小
+            fc_effect.dream_scene.seg_size = buf_ptr[6];
+            // 颜色数量
+            fc_effect.dream_scene.c_n = buf_ptr[7];
+            if (fc_effect.dream_scene.c_n > MAX_NUM_COLORS) {
+                fc_effect.dream_scene.c_n = MAX_NUM_COLORS;
+            }
+            // 清除rgb[0~n]数据
+            memset(fc_effect.dream_scene.rgb, 0,
+                   sizeof(fc_effect.dream_scene.rgb));
+
+            // 数据循环传输
+            for (i = 0; i < fc_effect.dream_scene.c_n; i++) {
+                fc_effect.dream_scene.rgb[i].r = buf_ptr[8 + i * 3];
+                fc_effect.dream_scene.rgb[i].g = buf_ptr[9 + i * 3];
+                fc_effect.dream_scene.rgb[i].b = buf_ptr[10 + i * 3];
+            }
+
+#if USER_DEBUG_ENABLE
+            // printf("fc_effect.dream_scene.c_n == %u\n",
+            //        (u16)fc_effect.dream_scene.c_n);
+            // printf("fc_effect.dream_scene.seg_size == %u\n",
+            //        (u16)fc_effect.dream_scene.seg_size);
+#endif
+
+            // 包含多段不同颜色的跳变模式和渐变模式，由于RGB灯串一共只有6个灯，这里将颜色段设置为1
+            if ((fc_effect.dream_scene.change_type == 0x02 ||
+                 fc_effect.dream_scene.change_type == 0x0A) &&
+                fc_effect.dream_scene.seg_size == 0x05) {
+                fc_effect.dream_scene.seg_size = 1;
+            }
+
+            led_strip_rgb_schedule();
         }
     }
 }
@@ -907,7 +815,7 @@ void parse_led_strip_data(u8 *pBuf, u8 len)
 {
     /* 协议解析 */
     parse_zd_data(pBuf, len);
-    dp_extract_data_handle(pBuf); // 额外的数据包解析
+    // dp_extract_data_handle(pBuf); // 额外的数据包解析
     os_taskq_post("msg_task", 1, MSG_USER_SAVE_INFO);
 }
 

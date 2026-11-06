@@ -944,9 +944,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/protocol/dp_data_tran.h" />
-		<Unit filename="../../../user_app/protocol/report.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="../../../user_app/rf24g_key/rf24g_app.h" />
 		<Unit filename="../../../user_app/rf24g_key/rf24g_key.c">
 			<Option compilerVar="CC" />
@@ -958,10 +955,13 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../user_app/save_flash/save_flash.h" />
-		<Unit filename="../../../user_app/user_ble_notify/user_ble_notify.c">
+		<Unit filename="../../../user_app/user_ble_notify/user_ble_notify_app.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../../user_app/user_ble_notify/user_ble_notify.h" />
+		<Unit filename="../../../user_app/user_ble_notify/user_ble_notify_driver.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../user_app/user_ble_notify/user_ble_notify_driver.h" />
 		<Unit filename="../../../user_app/user_include.h" />
 		<Unit filename="../../../user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/Adafruit_NeoPixel.H" />
 		<Unit filename="../../../user_app/ws2812-fx-lib/Adafruit_NeoPixel_C/adafruit_typedef.h" />

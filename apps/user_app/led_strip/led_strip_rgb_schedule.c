@@ -32,7 +32,7 @@ void led_strip_rgb_schedule_init(void)
 	fc_effect.b = 255;
 	fc_effect.app_b = 100; // 反馈给app的亮度，单位：百分比
 
-	fc_effect.app_speed = 80;
+	fc_effect.app_speed = 50;
 	fc_effect.dream_scene.speed = (500 - (u32)fc_effect.app_speed * 500 / 100);
 	fc_effect.music.m = 1;
 	fc_effect.music.s = 85;

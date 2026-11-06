@@ -1,0 +1,30 @@
+# ========== 工程私有目录（不纳入版本管理） ==========
+.agents/
+.obsidian/
+
+# ========== 编译中间产物 ==========
+# 目标文件 / 依赖 / 临时文件
+*.o
+*.obj
+*.d
+*.TMP
+
+# 构建输出目录（CodeBlocks: obj/ ；Makefile: objs/）
+obj/
+objs/
+
+# 链接与编译中间文件
+*.elf
+*.elf.*
+*.map
+*.lst
+*.bc
+sdk.ld
+
+# 预构建生成的符号列表
+sdk_used_list.used
+sdk_used_list.used-*
+
+# 例外：保留 SDK 参考反汇编
+!cpu/bd19/tools/rom.lst
+

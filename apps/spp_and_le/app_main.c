@@ -36,7 +36,7 @@
 
 #include "rf24g_key.h"
 #include "user_include.h"
-#include "user_ble_notify.h"
+#include "user_ble_notify_driver.h"
 
 #include "Adafruit_NeoPixel.H"
 #include "led_strip_rgb_schedule.h"
@@ -477,7 +477,7 @@ void ble_notify_task(void)
 {
     while (1)
     {
-        user_ble_notify_obj.param_handle();
+        user_ble_notify_param_handle();
         /*
             notify 需要一段时间才能发送，
             如果直接一次性修改发送，会导致旧数据被覆盖
